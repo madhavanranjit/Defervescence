@@ -11,7 +11,6 @@ export default function LogTab({ session }) {
   const [saved, setSaved] = useState(false)
   const [manualMode, setManualMode] = useState(false)
   const [manualText, setManualText] = useState('')
-  const apiKey = localStorage.getItem('openaiKey') || 'PASTE_YOUR_KEY_HERE'
   const transcriptRef = useRef('')
 
   function startRec() {
@@ -42,23 +41,32 @@ export default function LogTab({ session }) {
   }
 
   async function doParse(text) {
-  setLoading(true)
-  setParsed(null)
-  setSaved(false)
-  try {
-    const res = await fetch('/api/parse', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text })
-    })
-    const result = await res.json()
-    if (result.error) throw new Error(result.error)
-    setParsed(result)
-  } catch (e) {
-    alert('Could not parse. Try again.')
+    setLoading(true)
+    setParsed(null)
+    setSaved(false)
+    const now = new Date()
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+    const localTime = now.toLocaleTimeString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: true })
+    const localDate = now.toLocaleDateString('en-US', { timeZone: tz, year: 'numeric', month: 'long', day: 'numeric' })
+    const prompt = `Today is ${localDate}, current time is ${localTime}.
+User said: "${text}"
+Extract temperature and date/time. Return ONLY valid JSON, no markdown:
+{"temperature":<number>,"unit":"F" or "C","date":"YYYY-MM-DD","time":"HH:MM","time_display":"e.g. 2:30 PM","date_display":"e.g. March 13, 2025"}
+If no date/time mentioned, use today and current time. If no unit, assume Fahrenheit.`
+    try {
+      const res = await fetch('/api/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, localDate, localTime })
+      })
+      const result = await res.json()
+      if (result.error) throw new Error(result.error)
+      setParsed(result)
+    } catch (e) {
+      alert('Could not parse. Try again.')
+    }
+    setLoading(false)
   }
-  setLoading(false)
-}
 
   async function saveReading() {
     if (!parsed) return
@@ -82,7 +90,8 @@ export default function LogTab({ session }) {
   return (
     <div style={{ padding: '8px 16px 40px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', margin: '8px 0 20px' }}>
-        <button onClick={isRec ? () => {} : startRec} style={{ width: '90px', height: '90px', borderRadius: '50%', border: isRec ? '2px solid #ef233c' : '2px solid #ff6b35', background: isRec ? 'rgba(239,35,60,0.1)' : 'rgba(255,107,53,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+        <button onClick={isRec ? () => {} : startRec}
+          style={{ width: '90px', height: '90px', borderRadius: '50%', border: isRec ? '2px solid #ef233c' : '2px solid #ff6b35', background: isRec ? 'rgba(239,35,60,0.1)' : 'rgba(255,107,53,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
           <span style={{ fontSize: '2rem' }}>{isRec ? '⏹' : '🎤'}</span>
         </button>
         <span style={{ fontSize: '0.64rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6b6875' }}>
