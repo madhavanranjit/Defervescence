@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../supabase'
 import LogTab from './LogTab'
+import MedicineTab from './MedicineTab'
 
 export default function Dashboard({ session }) {
   const [tab, setTab] = useState('log')
@@ -28,7 +29,7 @@ export default function Dashboard({ session }) {
 
       <div style={s.content}>
         {tab === 'log' && <LogTab session={session} />}
-        {tab === 'doctor' && <p style={s.soon}>Doctor view — coming next!</p>}
+        {tab === 'medicines' && <MedicineTab session={session} />}
         {tab === 'medicines' && <p style={s.soon}>Medicine tracker — coming next!</p>}
         {tab === 'setup' && (
           <div>
