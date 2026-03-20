@@ -20,7 +20,7 @@ export default function Dashboard({ session }) {
         <h1 style={s.title}>Defer<span style={s.accent}>vescence</span></h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {!creditsData.loading && (
-            <span style={{ fontSize: '0.65rem', color: creditsData.totalRemaining > 0 ? '#06d6a0' : '#ef233c', background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '20px' }}>
+            <span style={{ fontSize: '0.65rem', color: creditsData.totalRemaining > 0 ? '#00875a' : '#ef233c', background: creditsData.totalRemaining > 0 ? '#e3fcef' : '#ffe5e8', padding: '4px 10px', borderRadius: '20px', fontWeight: '500' }}>
               {creditsData.totalRemaining > 0 ? `${creditsData.totalRemaining} left` : 'No credits'}
             </span>
           )}
@@ -49,13 +49,13 @@ export default function Dashboard({ session }) {
 }
 
 const s = {
-  page: { minHeight: '100vh', background: '#0d0d0f', color: '#f0ede8', fontFamily: 'monospace' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '24px 20px 12px' },
-  title: { fontFamily: 'Georgia,serif', fontSize: '1.4rem', color: '#f0ede8' },
+  page: { minHeight: '100vh', background: '#f7f6f3', color: '#1a1a1a', fontFamily: 'monospace' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 20px 12px', background: '#fff', borderBottom: '1px solid #e0e0e0' },
+  title: { fontFamily: 'Georgia,serif', fontSize: '1.4rem', color: '#1a1a1a' },
   accent: { color: '#ff6b35', fontStyle: 'italic' },
-  signOut: { background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#6b6875', fontSize: '0.7rem', padding: '6px 12px', cursor: 'pointer' },
-  tabs: { display: 'flex', gap: '4px', background: '#16161a', margin: '0 16px 16px', borderRadius: '14px', padding: '5px' },
-  tab: { flex: 1, padding: '9px 4px', border: 'none', borderRadius: '10px', background: 'none', color: '#6b6875', fontSize: '0.62rem', cursor: 'pointer', letterSpacing: '0.06em' },
-  tabActive: { background: '#1e1e24', color: '#f0ede8' },
+  signOut: { background: 'none', border: '1px solid #e0e0e0', borderRadius: '8px', color: '#999', fontSize: '0.7rem', padding: '6px 12px', cursor: 'pointer' },
+  tabs: { display: 'flex', gap: '4px', background: '#fff', padding: '8px 16px', borderBottom: '1px solid #e0e0e0' },
+  tab: { flex: 1, padding: '9px 4px', border: 'none', borderRadius: '10px', background: 'none', color: '#999', fontSize: '0.62rem', cursor: 'pointer', letterSpacing: '0.06em' },
+  tabActive: { background: '#fff5f1', color: '#ff6b35', fontWeight: '500' },
   content: { padding: '0 16px' },
 }

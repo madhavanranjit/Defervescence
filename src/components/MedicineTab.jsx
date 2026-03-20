@@ -3,7 +3,7 @@ import { supabase } from '../supabase'
 
 const MEDICINES = ['Calpol', 'Dolo', 'Ibuprofen', 'Combiflam', 'Paracetamol', 'Other']
 
-export default function MedicineTab({ session }) {
+export default function MedicineTab({ session, creditsData }) {
   const [medicines, setMedicines] = useState([])
   const [isRec, setIsRec] = useState(false)
   const [transcript, setTranscript] = useState('')
@@ -93,57 +93,57 @@ export default function MedicineTab({ session }) {
   }
 
   return (
-    <div style={{ padding: '8px 16px 40px' }}>
+    <div style={{ padding: '16px 0 40px' }}>
 
-      {/* Quick add buttons */}
-      <p style={{ fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#6b6875', marginBottom: '10px' }}>Quick add</p>
+      {/* Quick add */}
+      <p style={{ fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#999', marginBottom: '10px' }}>Quick add</p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
         {MEDICINES.map(m => (
           <button key={m} onClick={() => { setManualText(m + ' now'); setManualMode(true) }}
-            style={{ background: '#1e1e24', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '20px', padding: '7px 14px', color: '#f0ede8', fontSize: '0.72rem', cursor: 'pointer' }}>
+            style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '20px', padding: '7px 14px', color: '#1a1a1a', fontSize: '0.72rem', cursor: 'pointer' }}>
             {m}
           </button>
         ))}
       </div>
 
       {/* Mic */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', margin: '8px 0 20px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', margin: '8px 0 24px' }}>
         <button onClick={isRec ? () => {} : startRec}
-          style={{ width: '90px', height: '90px', borderRadius: '50%', border: isRec ? '2px solid #ef233c' : '2px solid #ff6b35', background: isRec ? 'rgba(239,35,60,0.1)' : 'rgba(255,107,53,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+          style={{ width: '90px', height: '90px', borderRadius: '50%', border: isRec ? '2px solid #ef233c' : '2px solid #ff6b35', background: isRec ? '#ffe5e8' : '#fff5f1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 12px rgba(255,107,53,0.15)' }}>
           <span style={{ fontSize: '2rem' }}>{isRec ? '⏹' : '🎤'}</span>
         </button>
-        <span style={{ fontSize: '0.64rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#6b6875' }}>
+        <span style={{ fontSize: '0.64rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999' }}>
           {isRec ? 'Listening…' : 'Say medicine name & dose'}
         </span>
       </div>
 
       {/* Transcript */}
-      <div style={{ background: '#1e1e24', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px', minHeight: '56px', fontSize: '0.82rem', lineHeight: '1.6', marginBottom: '13px' }}>
+      <div style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '12px', padding: '14px', minHeight: '56px', fontSize: '0.82rem', lineHeight: '1.6', marginBottom: '13px' }}>
         {transcript
-          ? <span style={{ color: '#f0ede8' }}>{transcript}</span>
-          : <span style={{ color: '#6b6875', fontStyle: 'italic', fontSize: '0.75rem' }}>e.g. "Calpol 250mg now" or "Dolo at 3pm"</span>}
+          ? <span style={{ color: '#1a1a1a' }}>{transcript}</span>
+          : <span style={{ color: '#bbb', fontStyle: 'italic', fontSize: '0.75rem' }}>e.g. "Calpol 250mg now" or "Dolo at 3pm"</span>}
       </div>
 
-      {loading && <div style={{ textAlign: 'center', color: '#6b6875', fontSize: '0.78rem', marginBottom: '13px' }}>Parsing…</div>}
+      {loading && <div style={{ textAlign: 'center', color: '#999', fontSize: '0.78rem', marginBottom: '13px' }}>Parsing…</div>}
 
       {/* Parsed result */}
       {parsed && !loading && (
-        <div style={{ background: 'rgba(255,107,53,0.06)', border: '1px solid rgba(255,107,53,0.25)', borderRadius: '14px', padding: '16px', marginBottom: '13px' }}>
+        <div style={{ background: '#fff5f1', border: '1px solid #ffd5c2', borderRadius: '14px', padding: '16px', marginBottom: '13px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-            <span style={{ fontSize: '0.62rem', textTransform: 'uppercase', color: '#6b6875', letterSpacing: '0.1em' }}>Medicine</span>
-            <span style={{ fontSize: '1rem', color: '#ff6b35', fontWeight: '500' }}>{parsed.name}</span>
+            <span style={{ fontSize: '0.62rem', textTransform: 'uppercase', color: '#999', letterSpacing: '0.1em' }}>Medicine</span>
+            <span style={{ fontSize: '1rem', color: '#ff6b35', fontWeight: '600' }}>{parsed.name}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-            <span style={{ fontSize: '0.62rem', textTransform: 'uppercase', color: '#6b6875', letterSpacing: '0.1em' }}>Dose</span>
-            <span style={{ fontSize: '0.82rem', color: '#ffd166' }}>{parsed.dose || '—'}</span>
+            <span style={{ fontSize: '0.62rem', textTransform: 'uppercase', color: '#999', letterSpacing: '0.1em' }}>Dose</span>
+            <span style={{ fontSize: '0.82rem', color: '#1a1a1a' }}>{parsed.dose || '—'}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-            <span style={{ fontSize: '0.62rem', textTransform: 'uppercase', color: '#6b6875', letterSpacing: '0.1em' }}>Date</span>
-            <span style={{ fontSize: '0.82rem', color: '#f0ede8' }}>{parsed.date_display}</span>
+            <span style={{ fontSize: '0.62rem', textTransform: 'uppercase', color: '#999', letterSpacing: '0.1em' }}>Date</span>
+            <span style={{ fontSize: '0.82rem', color: '#1a1a1a' }}>{parsed.date_display}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-            <span style={{ fontSize: '0.62rem', textTransform: 'uppercase', color: '#6b6875', letterSpacing: '0.1em' }}>Time</span>
-            <span style={{ fontSize: '0.82rem', color: '#f0ede8' }}>{parsed.time_display}</span>
+            <span style={{ fontSize: '0.62rem', textTransform: 'uppercase', color: '#999', letterSpacing: '0.1em' }}>Time</span>
+            <span style={{ fontSize: '0.82rem', color: '#1a1a1a' }}>{parsed.time_display}</span>
           </div>
           <button onClick={saveMedicine} style={{ width: '100%', background: '#ff6b35', color: '#fff', border: 'none', borderRadius: '10px', padding: '14px', fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer', marginTop: '14px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
             💊 Save Medicine
@@ -152,19 +152,19 @@ export default function MedicineTab({ session }) {
       )}
 
       {saved && (
-        <div style={{ textAlign: 'center', color: '#06d6a0', fontSize: '0.82rem', marginBottom: '16px', padding: '12px', background: 'rgba(6,214,160,0.06)', borderRadius: '10px', border: '1px solid rgba(6,214,160,0.2)' }}>
+        <div style={{ textAlign: 'center', color: '#00875a', fontSize: '0.82rem', marginBottom: '16px', padding: '12px', background: '#e3fcef', borderRadius: '10px', border: '1px solid #abf5d1' }}>
           ✓ Medicine saved!
         </div>
       )}
 
       {/* Manual entry */}
-      <button onClick={() => setManualMode(!manualMode)} style={{ width: '100%', background: 'none', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '11px', color: '#6b6875', fontSize: '0.69rem', cursor: 'pointer', marginBottom: '10px' }}>
+      <button onClick={() => setManualMode(!manualMode)} style={{ width: '100%', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '10px', padding: '11px', color: '#999', fontSize: '0.69rem', cursor: 'pointer', marginBottom: '10px' }}>
         ✏️ Type manually instead
       </button>
 
       {manualMode && (
         <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
-          <input style={{ flex: 1, background: '#1e1e24', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '9px', padding: '11px 13px', color: '#f0ede8', fontSize: '0.79rem', outline: 'none', fontFamily: 'monospace' }}
+          <input style={{ flex: 1, background: '#fff', border: '1px solid #e0e0e0', borderRadius: '9px', padding: '11px 13px', color: '#1a1a1a', fontSize: '0.79rem', outline: 'none', fontFamily: 'monospace' }}
             placeholder='"Calpol 250mg at 3pm"'
             value={manualText}
             onChange={e => setManualText(e.target.value)}
@@ -176,19 +176,19 @@ export default function MedicineTab({ session }) {
         </div>
       )}
 
-      {/* Recent medicines list */}
+      {/* Recent medicines */}
       {medicines.length > 0 && (
         <>
-          <p style={{ fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#6b6875', marginBottom: '10px' }}>Recent</p>
+          <p style={{ fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#999', marginBottom: '10px' }}>Recent</p>
           {medicines.map(m => (
-            <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#16161a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', marginBottom: '8px' }}>
+            <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '12px', marginBottom: '8px' }}>
               <div>
                 <span style={{ fontSize: '0.85rem', color: '#ff6b35', fontWeight: '500' }}>{m.name}</span>
-                {m.dose && <span style={{ fontSize: '0.72rem', color: '#6b6875', marginLeft: '8px' }}>{m.dose}</span>}
+                {m.dose && <span style={{ fontSize: '0.72rem', color: '#999', marginLeft: '8px' }}>{m.dose}</span>}
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.72rem', color: '#f0ede8' }}>{m.date_display}</div>
-                <div style={{ fontSize: '0.65rem', color: '#6b6875' }}>{m.time_display}</div>
+                <div style={{ fontSize: '0.72rem', color: '#1a1a1a' }}>{m.date_display}</div>
+                <div style={{ fontSize: '0.65rem', color: '#999' }}>{m.time_display}</div>
               </div>
             </div>
           ))}
