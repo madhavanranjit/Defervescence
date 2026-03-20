@@ -3,6 +3,7 @@ import { supabase } from '../supabase'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts'
 
 export default function DoctorTab({ session }) {
+    console.log('DoctorTab mounted, user:', session.user.id)  // ← here
   const [readings, setReadings] = useState([])
   const [medicines, setMedicines] = useState([])
   const [loading, setLoading] = useState(true)
@@ -10,14 +11,16 @@ export default function DoctorTab({ session }) {
   useEffect(() => { fetchAll() }, [])
 
   async function fetchAll() {
-    const [r, m] = await Promise.all([
-      supabase.from('readings').select('*').eq('user_id', session.user.id).order('date').order('time'),
-      supabase.from('medicines').select('*').eq('user_id', session.user.id).order('date').order('time')
-    ])
-    if (r.data) setReadings(r.data)
-    if (m.data) setMedicines(m.data)
-    setLoading(false)
-  }
+  const [r, m] = await Promise.all([
+    supabase.from('readings').select('*').eq('user_id', session.user.id).order('date').order('time'),
+    supabase.from('medicines').select('*').eq('user_id', session.user.id).order('date').order('time')
+  ])
+  console.log('readings:', r.data, r.error)
+  console.log('medicines:', m.data, m.error)
+  if (r.data) setReadings(r.data)
+  if (m.data) setMedicines(m.data)
+  setLoading(false)
+}
 
   function toF(t, u) { return u === 'C' ? +(t * 9 / 5 + 32).toFixed(1) : t }
   function tempClass(t, u) {

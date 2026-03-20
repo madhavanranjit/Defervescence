@@ -30,15 +30,10 @@ export default function Dashboard({ session }) {
       </div>
 
       <div style={s.content}>
-  {tab === 'log' && <LogTab session={session} />}
-  {tab === 'doctor' && <DoctorTab session={session} />}
-  {tab === 'medicines' && <MedicineTab session={session} />}
-  {tab === 'setup' && <SetupTab session={session} />}
-</div>
-            <p style={s.soon}>Logged in as:</p>
-            <p style={{color:'#ff6b35',fontSize:'0.85rem',textAlign:'center'}}>{session.user.email || session.user.phone}</p>
-          </div>
-        )}
+        {tab === 'log' && <LogTab session={session} />}
+        {tab === 'doctor' && <DoctorTab session={session} />}
+        {tab === 'medicines' && <MedicineTab session={session} />}
+        {tab === 'setup' && <SetupTab session={session} />}
       </div>
     </div>
   )
@@ -50,9 +45,8 @@ const s = {
   title: {fontFamily:'Georgia,serif',fontSize:'1.4rem',color:'#f0ede8'},
   accent: {color:'#ff6b35',fontStyle:'italic'},
   signOut: {background:'none',border:'1px solid rgba(255,255,255,0.1)',borderRadius:'8px',color:'#6b6875',fontSize:'0.7rem',padding:'6px 12px',cursor:'pointer'},
-  tabs: {display:'flex',gap:'4px',padding:'0 16px',marginBottom:'16px',background:'#16161a',margin:'0 16px 16px',borderRadius:'14px',padding:'5px'},
+  tabs: {display:'flex',gap:'4px',background:'#16161a',margin:'0 16px 16px',borderRadius:'14px',padding:'5px'},
   tab: {flex:1,padding:'9px 4px',border:'none',borderRadius:'10px',background:'none',color:'#6b6875',fontSize:'0.62rem',cursor:'pointer',letterSpacing:'0.06em'},
   tabActive: {background:'#1e1e24',color:'#f0ede8'},
   content: {padding:'0 16px'},
-  soon: {textAlign:'center',color:'#6b6875',fontSize:'0.8rem',padding:'40px 0'},
 }
