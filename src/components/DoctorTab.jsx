@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts'
+import ShareReport from './ShareReport'
 
 export default function DoctorTab({ session }) {
   const [readings, setReadings] = useState([])
   const [medicines, setMedicines] = useState([])
   const [loading, setLoading] = useState(true)
   const [unit, setUnit] = useState(localStorage.getItem('preferredUnit') || 'F')
+  const [showReport, setShowReport] = useState(false)
 
   useEffect(() => { fetchAll() }, [])
 
@@ -88,9 +90,9 @@ export default function DoctorTab({ session }) {
             </button>
           ))}
         </div>
-        <button onClick={() => window.print()}
-          style={{ background: 'none', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '8px 14px', color: '#6b6875', fontSize: '0.72rem', cursor: 'pointer' }}>
-          🖨 Print / Share
+        <button onClick={() => setShowReport(true)}
+          style={{ background: '#ff6b35', border: 'none', borderRadius: '8px', padding: '8px 14px', color: '#fff', fontSize: '0.72rem', cursor: 'pointer', fontWeight: '500' }}>
+          📤 Share Report
         </button>
       </div>
 
@@ -195,6 +197,15 @@ export default function DoctorTab({ session }) {
         <textarea placeholder="Symptoms, other observations…"
           style={{ width: '100%', background: '#1e1e24', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '9px', padding: '11px', color: '#f0ede8', fontSize: '0.75rem', resize: 'vertical', minHeight: '80px', outline: 'none', fontFamily: 'monospace', lineHeight: '1.6' }} />
       </div>
+
+      {/* Share report modal */}
+      {showReport && (
+        <ShareReport
+          readings={readings}
+          medicines={medicines}
+          onClose={() => setShowReport(false)}
+        />
+      )}
 
     </div>
   )
