@@ -51,7 +51,17 @@ export default function DoctorTab({ session }) {
       <span style={{ fontSize: '0.7rem' }}>Log your first reading in the Log tab</span>
     </div>
   )
+async function deleteReading(id) {
+  if (!confirm('Delete this reading?')) return
+  await supabase.from('readings').delete().eq('id', id)
+  fetchAll()
+}
 
+async function deleteMedicine(id) {
+  if (!confirm('Delete this medicine?')) return
+  await supabase.from('medicines').delete().eq('id', id)
+  fetchAll()
+}
   return (
     <div style={{ padding: '8px 16px 60px' }}>
 
@@ -105,23 +115,21 @@ export default function DoctorTab({ session }) {
         </div>
       </div>
 
-      {/* Readings table */}
-      <div style={{ background: '#16161a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '18px', padding: '16px', marginBottom: '16px' }}>
-        <p style={{ fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#6b6875', marginBottom: '12px' }}>All readings</p>
-        {[...readings].reverse().map(r => (
-          <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-            <div>
-              <div style={{ fontSize: '0.75rem', color: '#f0ede8' }}>{r.date_display}</div>
-              <div style={{ fontSize: '0.65rem', color: '#6b6875' }}>{r.time_display}</div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <span style={{ background: tempClass(r.temperature, r.unit) + '22', color: tempClass(r.temperature, r.unit), borderRadius: '6px', padding: '3px 9px', fontSize: '0.78rem', fontWeight: '500' }}>
-                {r.temperature}°{r.unit}
-              </span>
-              <span style={{ fontSize: '0.65rem', color: '#6b6875' }}>{statusLabel(r.temperature, r.unit)}</span>
-            </div>
-          </div>
-        ))}
+      {[...readings].reverse().map(r => (
+  <div key={r.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+    <div>
+      <div style={{ fontSize: '0.75rem', color: '#f0ede8' }}>{r.date_display}</div>
+      <div style={{ fontSize: '0.65rem', color: '#6b6875' }}>{r.time_display}</div>
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <span style={{ background: tempClass(r.temperature, r.unit) + '22', color: tempClass(r.temperature, r.unit), borderRadius: '6px', padding: '3px 9px', fontSize: '0.78rem', fontWeight: '500' }}>
+        {r.temperature}°{r.unit}
+      </span>
+      <span style={{ fontSize: '0.65rem', color: '#6b6875' }}>{statusLabel(r.temperature, r.unit)}</span>
+      <button onClick={() => deleteReading(r.id)} style={{ background: 'none', border: 'none', color: '#6b6875', cursor: 'pointer', fontSize: '0.85rem', padding: '2px 6px' }}>🗑</button>
+    </div>
+  </div>
+))}
       </div>
 
       {/* Medicines table */}
@@ -129,19 +137,20 @@ export default function DoctorTab({ session }) {
         <div style={{ background: '#16161a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '18px', padding: '16px', marginBottom: '16px' }}>
           <p style={{ fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#6b6875', marginBottom: '12px' }}>Medicines given</p>
           {[...medicines].reverse().map(m => (
-            <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-              <div>
-                <div style={{ fontSize: '0.78rem', color: '#ff6b35', fontWeight: '500' }}>{m.name}</div>
-                <div style={{ fontSize: '0.65rem', color: '#6b6875' }}>{m.dose}</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '0.72rem', color: '#f0ede8' }}>{m.date_display}</div>
-                <div style={{ fontSize: '0.65rem', color: '#6b6875' }}>{m.time_display}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+  <div key={m.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+    <div>
+      <div style={{ fontSize: '0.78rem', color: '#ff6b35', fontWeight: '500' }}>{m.name}</div>
+      <div style={{ fontSize: '0.65rem', color: '#6b6875' }}>{m.dose}</div>
+    </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <div style={{ textAlign: 'right' }}>
+        <div style={{ fontSize: '0.72rem', color: '#f0ede8' }}>{m.date_display}</div>
+        <div style={{ fontSize: '0.65rem', color: '#6b6875' }}>{m.time_display}</div>
+      </div>
+      <button onClick={() => deleteMedicine(m.id)} style={{ background: 'none', border: 'none', color: '#6b6875', cursor: 'pointer', fontSize: '0.85rem', padding: '2px 6px' }}>🗑</button>
+    </div>
+  </div>
+))}
 
       {/* Notes */}
       <div style={{ background: '#16161a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '18px', padding: '16px' }}>
