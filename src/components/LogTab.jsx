@@ -1,8 +1,6 @@
 import { useState, useRef } from 'react'
 import { supabase } from '../supabase'
 
-const OPENAI_API = 'https://api.openai.com/v1/chat/completions'
-
 export default function LogTab({ session }) {
   const [isRec, setIsRec] = useState(false)
   const [transcript, setTranscript] = useState('')
@@ -11,7 +9,13 @@ export default function LogTab({ session }) {
   const [saved, setSaved] = useState(false)
   const [manualMode, setManualMode] = useState(false)
   const [manualText, setManualText] = useState('')
+  const [unit, setUnit] = useState(localStorage.getItem('preferredUnit') || 'F')
   const transcriptRef = useRef('')
+
+  function saveUnit(u) {
+    setUnit(u)
+    localStorage.setItem('preferredUnit', u)
+  }
 
   function startRec() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition
@@ -48,16 +52,11 @@ export default function LogTab({ session }) {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
     const localTime = now.toLocaleTimeString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: true })
     const localDate = now.toLocaleDateString('en-US', { timeZone: tz, year: 'numeric', month: 'long', day: 'numeric' })
-    const prompt = `Today is ${localDate}, current time is ${localTime}.
-User said: "${text}"
-Extract temperature and date/time. Return ONLY valid JSON, no markdown:
-{"temperature":<number>,"unit":"F" or "C","date":"YYYY-MM-DD","time":"HH:MM","time_display":"e.g. 2:30 PM","date_display":"e.g. March 13, 2025"}
-If no date/time mentioned, use today and current time. If no unit, assume Fahrenheit.`
     try {
       const res = await fetch('/api/parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, localDate, localTime })
+        body: JSON.stringify({ text, localDate, localTime, preferredUnit: unit })
       })
       const result = await res.json()
       if (result.error) throw new Error(result.error)
@@ -89,7 +88,21 @@ If no date/time mentioned, use today and current time. If no unit, assume Fahren
 
   return (
     <div style={{ padding: '8px 16px 40px' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', margin: '8px 0 20px' }}>
+
+      {/* Unit toggle */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+        <div style={{ display: 'flex', background: '#1e1e24', borderRadius: '10px', padding: '3px', gap: '3px' }}>
+          {['F', 'C'].map(u => (
+            <button key={u} onClick={() => saveUnit(u)}
+              style={{ padding: '6px 18px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '500', background: unit === u ? '#ff6b35' : 'none', color: unit === u ? '#fff' : '#6b6875' }}>
+              °{u}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Mic */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', margin: '0 0 20px' }}>
         <button onClick={isRec ? () => {} : startRec}
           style={{ width: '90px', height: '90px', borderRadius: '50%', border: isRec ? '2px solid #ef233c' : '2px solid #ff6b35', background: isRec ? 'rgba(239,35,60,0.1)' : 'rgba(255,107,53,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
           <span style={{ fontSize: '2rem' }}>{isRec ? '⏹' : '🎤'}</span>
@@ -99,14 +112,16 @@ If no date/time mentioned, use today and current time. If no unit, assume Fahren
         </span>
       </div>
 
+      {/* Transcript */}
       <div style={{ background: '#1e1e24', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', padding: '14px', minHeight: '56px', fontSize: '0.82rem', lineHeight: '1.6', marginBottom: '13px' }}>
         {transcript
           ? <span style={{ color: '#f0ede8' }}>{transcript}</span>
-          : <span style={{ color: '#6b6875', fontStyle: 'italic', fontSize: '0.75rem' }}>e.g. "101 now" or "100.4 on March 13 at 2pm"</span>}
+          : <span style={{ color: '#6b6875', fontStyle: 'italic', fontSize: '0.75rem' }}>e.g. "101 now" or "38.5 on March 13 at 2pm"</span>}
       </div>
 
       {loading && <div style={{ textAlign: 'center', color: '#6b6875', fontSize: '0.78rem', marginBottom: '13px' }}>Parsing…</div>}
 
+      {/* Parsed result */}
       {parsed && !loading && (
         <div style={{ background: 'rgba(6,214,160,0.06)', border: '1px solid rgba(6,214,160,0.25)', borderRadius: '14px', padding: '16px', marginBottom: '13px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
@@ -133,6 +148,7 @@ If no date/time mentioned, use today and current time. If no unit, assume Fahren
         </div>
       )}
 
+      {/* Manual entry */}
       <button onClick={() => setManualMode(!manualMode)} style={{ width: '100%', background: 'none', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '10px', padding: '11px', color: '#6b6875', fontSize: '0.69rem', cursor: 'pointer', marginBottom: '10px' }}>
         ✏️ Type manually instead
       </button>
@@ -141,7 +157,7 @@ If no date/time mentioned, use today and current time. If no unit, assume Fahren
         <div style={{ display: 'flex', gap: '8px' }}>
           <input
             style={{ flex: 1, background: '#1e1e24', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '9px', padding: '11px 13px', color: '#f0ede8', fontSize: '0.79rem', outline: 'none', fontFamily: 'monospace' }}
-            placeholder='"102.2 on March 14 at 9am"'
+            placeholder={unit === 'F' ? '"101 on March 14 at 9am"' : '"38.5 on March 14 at 9am"'}
             value={manualText}
             onChange={e => setManualText(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && doParse(manualText)}

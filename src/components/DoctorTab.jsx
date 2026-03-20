@@ -6,7 +6,7 @@ export default function DoctorTab({ session }) {
   const [readings, setReadings] = useState([])
   const [medicines, setMedicines] = useState([])
   const [loading, setLoading] = useState(true)
-  const [unit, setUnit] = useState('F')
+  const [unit, setUnit] = useState(localStorage.getItem('preferredUnit') || 'F')
 
   useEffect(() => { fetchAll() }, [])
 
@@ -30,6 +30,11 @@ export default function DoctorTab({ session }) {
     if (!confirm('Delete this medicine?')) return
     await supabase.from('medicines').delete().eq('id', id)
     fetchAll()
+  }
+
+  function saveUnit(u) {
+    setUnit(u)
+    localStorage.setItem('preferredUnit', u)
   }
 
   function convert(t, fromUnit) {
@@ -73,11 +78,11 @@ export default function DoctorTab({ session }) {
   return (
     <div style={{ padding: '8px 16px 60px' }}>
 
-      {/* Top bar — unit toggle + print */}
+      {/* Top bar */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
         <div style={{ display: 'flex', background: '#1e1e24', borderRadius: '10px', padding: '3px', gap: '3px' }}>
           {['F', 'C'].map(u => (
-            <button key={u} onClick={() => setUnit(u)}
+            <button key={u} onClick={() => saveUnit(u)}
               style={{ padding: '6px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '500', background: unit === u ? '#ff6b35' : 'none', color: unit === u ? '#fff' : '#6b6875' }}>
               °{u}
             </button>
