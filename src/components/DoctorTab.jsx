@@ -75,8 +75,8 @@ export default function DoctorTab({ session }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '16px' }}>
         {[
           { label: 'Peak', value: peak + '°', color: peak >= 103 ? '#ef233c' : peak >= 100.4 ? '#ffd166' : '#06d6a0' },
-          { label: 'Average', value: avg + '°', color: '#f0ede8' },
-          { label: 'Readings', value: readings.length, color: '#f0ede8' },
+{ label: 'Readings', value: readings.length, color: '#f0ede8' },
+{ label: 'Last', value: readings.length ? readings[readings.length-1].temperature + '°' : '—', color: '#f0ede8' },
         ].map(s => (
           <div key={s.label} style={{ background: '#1e1e24', borderRadius: '12px', padding: '12px 8px', textAlign: 'center' }}>
             <div style={{ fontFamily: 'Georgia,serif', fontSize: '1.4rem', color: s.color }}>{s.value}</div>
