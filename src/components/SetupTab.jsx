@@ -2,6 +2,15 @@ import { useState } from 'react'
 import { supabase } from '../supabase'
 
 export default function SetupTab({ session, creditsData }) {
+  const [patientName, setPatientName] = useState(localStorage.getItem('patientName') || '')
+  const [nameSaved, setNameSaved] = useState(!!localStorage.getItem('patientName'))
+
+  function saveName() {
+    if (!patientName.trim()) return
+    localStorage.setItem('patientName', patientName.trim())
+    setNameSaved(true)
+  }
+
   return (
     <div style={{ padding: '8px 16px 40px' }}>
 
@@ -10,6 +19,24 @@ export default function SetupTab({ session, creditsData }) {
         <p style={s.label}>Logged in as</p>
         <p style={s.value}>{session.user.email || session.user.phone}</p>
         <button onClick={() => supabase.auth.signOut()} style={s.signOutBtn}>Sign out</button>
+      </div>
+
+      {/* Patient name */}
+      <div style={s.card}>
+        <p style={s.cardTitle}>Patient Name</p>
+        <p style={s.hint}>Shown on the doctor report</p>
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+          <input
+            style={s.input}
+            placeholder="e.g. Rahul Sharma"
+            value={patientName}
+            onChange={e => { setPatientName(e.target.value); setNameSaved(false) }}
+          />
+          <button onClick={saveName} style={s.saveBtn}>Save</button>
+        </div>
+        {nameSaved && (
+          <p style={{ fontSize: '0.65rem', color: '#06d6a0' }}>✓ Name saved</p>
+        )}
       </div>
 
       {/* Credits */}
@@ -29,7 +56,6 @@ export default function SetupTab({ session, creditsData }) {
             <div style={s.statLabel}>Paid credits</div>
           </div>
         </div>
-
         {creditsData.totalRemaining === 0 ? (
           <div style={{ background: 'rgba(239,35,60,0.08)', border: '1px solid rgba(239,35,60,0.2)', borderRadius: '10px', padding: '12px', textAlign: 'center', marginBottom: '12px' }}>
             <p style={{ color: '#ef233c', fontSize: '0.78rem', marginBottom: '4px' }}>No credits remaining</p>
@@ -40,9 +66,8 @@ export default function SetupTab({ session, creditsData }) {
             <p style={{ color: '#ffd166', fontSize: '0.78rem' }}>Only {creditsData.freeRemaining} free readings left!</p>
           </div>
         ) : null}
-
         <button style={{ width: '100%', background: '#ff6b35', color: '#fff', border: 'none', borderRadius: '10px', padding: '14px', fontSize: '0.82rem', fontWeight: '500', cursor: 'pointer' }}
-          onClick={() => alert('Payments coming soon! You will be able to top up with ₹10 for 100 readings.')}>
+          onClick={() => alert('Payments coming soon! ₹10 for 100 readings.')}>
           ₹10 for 100 readings — Top up
         </button>
         <p style={{ fontSize: '0.65rem', color: '#6b6875', textAlign: 'center', marginTop: '8px' }}>
@@ -64,9 +89,12 @@ export default function SetupTab({ session, creditsData }) {
 
 const s = {
   card: { background: '#16161a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '18px', padding: '18px 16px', marginBottom: '13px' },
-  cardTitle: { fontSize: '0.85rem', color: '#f0ede8', fontWeight: '500', marginBottom: '14px' },
+  cardTitle: { fontSize: '0.85rem', color: '#f0ede8', fontWeight: '500', marginBottom: '6px' },
   label: { fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#6b6875', marginBottom: '4px' },
   value: { fontSize: '0.85rem', color: '#ff6b35', marginBottom: '14px' },
+  hint: { fontSize: '0.7rem', color: '#6b6875', marginBottom: '10px' },
+  input: { flex: 1, background: '#1e1e24', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '9px', padding: '11px 13px', color: '#f0ede8', fontSize: '0.82rem', outline: 'none', fontFamily: 'monospace' },
+  saveBtn: { background: '#ff6b35', color: '#fff', border: 'none', borderRadius: '9px', padding: '11px 16px', fontSize: '0.75rem', cursor: 'pointer', fontWeight: '500' },
   signOutBtn: { background: 'none', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '8px', padding: '8px 16px', color: '#6b6875', fontSize: '0.72rem', cursor: 'pointer' },
   statBox: { background: '#1e1e24', borderRadius: '10px', padding: '12px', textAlign: 'center' },
   statLabel: { fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#6b6875', marginTop: '4px' },

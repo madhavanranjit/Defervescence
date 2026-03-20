@@ -53,7 +53,7 @@ export default function LogTab({ session, creditsData }) {
     const localTime = now.toLocaleTimeString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: true })
     const localDate = now.toLocaleDateString('en-US', { timeZone: tz, year: 'numeric', month: 'long', day: 'numeric' })
     try {
-      const res = await fetch('/api/parse', {
+      const res = await fetch('https://defervescence.vercel.app/api/parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, localDate, localTime, preferredUnit: unit })

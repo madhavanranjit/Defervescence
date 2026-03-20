@@ -1,0 +1,10 @@
+{
+  "appId": "com.defervescence.app",
+  "appName": "Defervescence",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "hostname": "defervescence.vercel.app",
+    "cleartext": false
+  }
+}

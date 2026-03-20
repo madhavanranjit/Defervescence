@@ -9,11 +9,13 @@ export default function Auth() {
   const [error, setError] = useState('')
 
   async function signInWithGoogle() {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin }
-    })
-  }
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: 'https://defervescence.vercel.app',
+    }
+  })
+}
 
   async function sendOTP() {
     if (!phone) return

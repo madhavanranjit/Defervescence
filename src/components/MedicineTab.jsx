@@ -58,7 +58,7 @@ export default function MedicineTab({ session }) {
     setParsed(null)
     setSaved(false)
     try {
-      const res = await fetch('/api/parse-medicine', {
+      const res = await fetch('https://defervescence.vercel.app/api/parse-medicine', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text })
