@@ -42,26 +42,23 @@ export default function LogTab({ session }) {
   }
 
   async function doParse(text) {
-    setLoading(true)
-    setParsed(null)
-    setSaved(false)
-    const now = new Date()
-    const prompt = `Today is ${now.toDateString()}, time is ${now.toLocaleTimeString()}. User said: "${text}". Extract temperature and date/time. Return ONLY valid JSON, no markdown: {"temperature":<number>,"unit":"F" or "C","date":"YYYY-MM-DD","time":"HH:MM","time_display":"e.g. 2:30 PM","date_display":"e.g. March 13, 2025"}. If no date/time, use today/now. If no unit, assume Fahrenheit.`
-    try {
-      const res = await fetch(OPENAI_API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
-        body: JSON.stringify({ model: 'gpt-4o-mini', max_tokens: 200, temperature: 0, messages: [{ role: 'user', content: prompt }] })
-      })
-      const data = await res.json()
-      const raw = data.choices?.[0]?.message?.content || ''
-      const result = JSON.parse(raw.replace(/```json|```/g, '').trim())
-      setParsed(result)
-    } catch (e) {
-      alert('Could not parse. Try again.')
-    }
-    setLoading(false)
+  setLoading(true)
+  setParsed(null)
+  setSaved(false)
+  try {
+    const res = await fetch('/api/parse', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    })
+    const result = await res.json()
+    if (result.error) throw new Error(result.error)
+    setParsed(result)
+  } catch (e) {
+    alert('Could not parse. Try again.')
   }
+  setLoading(false)
+}
 
   async function saveReading() {
     if (!parsed) return
