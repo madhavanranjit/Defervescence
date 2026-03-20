@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { supabase } from '../supabase'
 
-export default function LogTab({ session }) {
+export default function LogTab({ session, creditsData }) {
   const [isRec, setIsRec] = useState(false)
   const [transcript, setTranscript] = useState('')
   const [parsed, setParsed] = useState(null)
@@ -69,6 +69,13 @@ export default function LogTab({ session }) {
 
   async function saveReading() {
     if (!parsed) return
+
+    const { allowed } = await creditsData.useCredit()
+    if (!allowed) {
+      alert('No credits remaining! Please top up to continue logging readings.')
+      return
+    }
+
     const { error } = await supabase.from('readings').insert({
       user_id: session.user.id,
       temperature: parsed.temperature,
@@ -90,7 +97,7 @@ export default function LogTab({ session }) {
     <div style={{ padding: '8px 16px 40px' }}>
 
       {/* Unit toggle */}
-      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
         <div style={{ display: 'flex', background: '#1e1e24', borderRadius: '10px', padding: '3px', gap: '3px' }}>
           {['F', 'C'].map(u => (
             <button key={u} onClick={() => saveUnit(u)}
@@ -100,6 +107,18 @@ export default function LogTab({ session }) {
           ))}
         </div>
       </div>
+
+      {/* Credits banner */}
+      {!creditsData.loading && creditsData.freeRemaining > 0 && creditsData.freeRemaining <= 3 && (
+        <div style={{ background: 'rgba(255,209,102,0.08)', border: '1px solid rgba(255,209,102,0.2)', borderRadius: '10px', padding: '10px 14px', marginBottom: '14px', fontSize: '0.72rem', color: '#ffd166', textAlign: 'center' }}>
+          ⚠️ {creditsData.freeRemaining} free readings left
+        </div>
+      )}
+      {!creditsData.loading && creditsData.totalRemaining === 0 && (
+        <div style={{ background: 'rgba(239,35,60,0.08)', border: '1px solid rgba(239,35,60,0.2)', borderRadius: '10px', padding: '10px 14px', marginBottom: '14px', fontSize: '0.72rem', color: '#ef233c', textAlign: 'center' }}>
+          ❌ No credits left — top up to continue
+        </div>
+      )}
 
       {/* Mic */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', margin: '0 0 20px' }}>
@@ -167,6 +186,7 @@ export default function LogTab({ session }) {
           </button>
         </div>
       )}
+
     </div>
   )
 }
