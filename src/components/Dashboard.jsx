@@ -8,10 +8,19 @@ import DoctorTab from './DoctorTab'
 import MedicineTab from './MedicineTab'
 import SetupTab from './SetupTab'
 
-function DashboardInner({ session }) {
+function DashboardInner({ session, onSignOut }) {
   const [tab, setTab] = useState('log')
   const creditsData = useCredits(session)
   const { activePatient } = usePatient()
+
+  async function handleSignOut() {
+    try {
+      if (session) await supabase.auth.signOut()
+    } catch(e) {
+      console.log('signout error', e)
+    }
+    onSignOut()
+  }
 
   return (
     <div style={s.page}>
@@ -23,18 +32,10 @@ function DashboardInner({ session }) {
               {creditsData.totalRemaining > 0 ? `${creditsData.totalRemaining} left` : 'No credits'}
             </span>
           )}
-          <button onClick={async () => {
-  try {
-    if (session) await supabase.auth.signOut()
-  } catch(e) {
-    console.log('signout error', e)
-  }
-  onSignOut()
-}} style={s.signOut}>Sign out</button>
+          <button onClick={handleSignOut} style={s.signOut}>Sign out</button>
         </div>
       </header>
 
-      {/* Patient selector */}
       <div style={{ padding: '8px 16px', background: '#fff', borderBottom: '1px solid #e0e0e0', display: 'flex', alignItems: 'center', gap: '8px' }}>
         <PatientSelector />
         {activePatient && (
@@ -57,7 +58,7 @@ function DashboardInner({ session }) {
           {tab === 'log' && <LogTab session={session} creditsData={creditsData} patient={activePatient} />}
           {tab === 'doctor' && <DoctorTab session={session} patient={activePatient} />}
           {tab === 'medicines' && <MedicineTab session={session} creditsData={creditsData} patient={activePatient} />}
-          {tab === 'setup' && <SetupTab session={session} creditsData={creditsData} />}
+          {tab === 'setup' && <SetupTab session={session} creditsData={creditsData} onSignOut={handleSignOut} />}
         </> : (
           <div style={{ textAlign: 'center', padding: '40px', color: '#999', fontSize: '0.8rem' }}>
             Add a patient to get started
@@ -68,10 +69,10 @@ function DashboardInner({ session }) {
   )
 }
 
-export default function Dashboard({ session }) {
+export default function Dashboard({ session, onSignOut }) {
   return (
     <PatientProvider session={session}>
-      <DashboardInner session={session} />
+      <DashboardInner session={session} onSignOut={onSignOut} />
     </PatientProvider>
   )
 }
