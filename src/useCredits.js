@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 
-const FREE_LIMIT = 10
+const FREE_LIMIT = 100
 
 export function useCredits(session) {
   const [credits, setCredits] = useState(null)
