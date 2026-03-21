@@ -6,7 +6,8 @@
     "androidScheme": "https"
   },
   "android": {
-    "allowMixedContent": true
+    "allowMixedContent": true,
+    "backgroundColor": "#f7f6f3"
   },
   "plugins": {
     "App": {

@@ -11,11 +11,12 @@ export default function LogTab({ session, creditsData, patient }) {
   const [unit, setUnit] = useState(localStorage.getItem('preferredUnit') || 'F')
   const transcriptRef = useRef('')
 
-  // Manual form state
   const now = new Date()
   const [manualTemp, setManualTemp] = useState('')
   const [manualDate, setManualDate] = useState(now.toISOString().split('T')[0])
   const [manualTime, setManualTime] = useState(now.toTimeString().slice(0, 5))
+
+  const apiBase = 'https://defervescence.vercel.app'
 
   function saveUnit(u) {
     setUnit(u)
@@ -58,7 +59,7 @@ export default function LogTab({ session, creditsData, patient }) {
     const localTime = now.toLocaleTimeString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: true })
     const localDate = now.toLocaleDateString('en-US', { timeZone: tz, year: 'numeric', month: 'long', day: 'numeric' })
     try {
-      const res = await fetch('https://defervescence.vercel.app/api/parse', {
+      const res = await fetch(`${apiBase}/api/parse`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, localDate, localTime, preferredUnit: unit })
@@ -72,93 +73,67 @@ export default function LogTab({ session, creditsData, patient }) {
     setLoading(false)
   }
 
-  async function saveReading(data) {
+  async function saveVoiceReading() {
+    if (!parsed) return
     const { allowed } = creditsData ? await creditsData.useCredit() : { allowed: true }
     if (!allowed) {
       alert('No credits remaining! Please top up to continue.')
       return
     }
-    const { error } = await supabase.from('readings').insert({
-      user_id: session.user.id,
+
+    const reading = {
+      user_id: session?.user?.id,
       patient_id: patient?.id,
-      ...data
-    })
-    if (error) { alert('Save failed: ' + error.message); return }
+      temperature: parsed.temperature,
+      unit: parsed.unit,
+      date: parsed.date,
+      time: parsed.time,
+      date_display: parsed.date_display,
+      time_display: parsed.time_display,
+    }
+
+    if (!session) {
+      const { saveLocalReading } = await import('../localData')
+      saveLocalReading(reading)
+    } else {
+      const { error } = await supabase.from('readings').insert(reading)
+      if (error) { alert('Save failed: ' + error.message); return }
+    }
     setSaved(true)
     setParsed(null)
     setTranscript('')
     transcriptRef.current = ''
   }
-
-  async function saveVoiceReading() {
-  if (!parsed) return
-  const { allowed } = creditsData ? await creditsData.useCredit() : { allowed: true }
-  if (!allowed) {
-    alert('No credits remaining! Please top up to continue.')
-    return
-  }
-
-  const reading = {
-    user_id: session?.user?.id,
-    patient_id: patient?.id,
-    temperature: parsed.temperature,
-    unit: parsed.unit,
-    date: parsed.date,
-    time: parsed.time,
-    date_display: parsed.date_display,
-    time_display: parsed.time_display,
-  }
-
-  if (!session) {
-    const { saveLocalReading } = await import('../localData')
-    saveLocalReading(reading)
-    setSaved(true)
-    setParsed(null)
-    setTranscript('')
-    transcriptRef.current = ''
-    return
-  }
-
-  const { error } = await supabase.from('readings').insert(reading)
-  if (error) { alert('Save failed: ' + error.message); return }
-  setSaved(true)
-  setParsed(null)
-  setTranscript('')
-  transcriptRef.current = ''
-}
 
   async function saveManualReading() {
-  if (!manualTemp) { alert('Please enter a temperature'); return }
-  const temp = parseFloat(manualTemp)
-  if (isNaN(temp)) { alert('Please enter a valid temperature'); return }
-  const dateObj = new Date(manualDate + 'T' + manualTime)
-  const date_display = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-  const time_display = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+    if (!manualTemp) { alert('Please enter a temperature'); return }
+    const temp = parseFloat(manualTemp)
+    if (isNaN(temp)) { alert('Please enter a valid temperature'); return }
+    const dateObj = new Date(manualDate + 'T' + manualTime)
+    const date_display = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    const time_display = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
 
-  const reading = {
-    user_id: session?.user?.id,
-    patient_id: patient?.id,
-    temperature: temp,
-    unit,
-    date: manualDate,
-    time: manualTime,
-    date_display,
-    time_display,
-  }
+    const reading = {
+      user_id: session?.user?.id,
+      patient_id: patient?.id,
+      temperature: temp,
+      unit,
+      date: manualDate,
+      time: manualTime,
+      date_display,
+      time_display,
+    }
 
-  if (!session) {
-    const { saveLocalReading } = await import('../localData')
-    saveLocalReading(reading)
+    if (!session) {
+      const { saveLocalReading } = await import('../localData')
+      saveLocalReading(reading)
+    } else {
+      const { error } = await supabase.from('readings').insert(reading)
+      if (error) { alert('Save failed: ' + error.message); return }
+    }
     setSaved(true)
     setManualTemp('')
-    return
   }
-
-  const { error } = await supabase.from('readings').insert(reading)
-  if (error) { alert('Save failed: ' + error.message); return }
-  setSaved(true)
-  setManualTemp('')
-}
 
   return (
     <div style={{ padding: '16px 0 40px' }}>
@@ -199,7 +174,6 @@ export default function LogTab({ session, creditsData, patient }) {
         <p style={{ fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#999', marginBottom: '16px', textAlign: 'center' }}>
           🎤 Voice entry — uses 1 credit
         </p>
-
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
           <button onClick={isRec ? () => {} : startRec}
             style={{ width: '80px', height: '80px', borderRadius: '50%', border: isRec ? '2px solid #ef233c' : '2px solid #ff6b35', background: isRec ? '#ffe5e8' : '#fff5f1', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 2px 12px rgba(255,107,53,0.15)' }}>
@@ -239,20 +213,17 @@ export default function LogTab({ session, creditsData, patient }) {
         )}
       </div>
 
-      {/* Manual section — FREE */}
+      {/* Manual section */}
       <div style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '18px', padding: '20px 16px', marginBottom: '14px' }}>
         <p style={{ fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#999', marginBottom: '16px', textAlign: 'center' }}>
           ✏️ Manual entry — always free
         </p>
 
-        {/* Temperature input */}
         <div style={{ marginBottom: '12px' }}>
           <label style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#999', display: 'block', marginBottom: '6px' }}>
             Temperature (°{unit})
           </label>
-          <input
-            type="number"
-            step="0.1"
+          <input type="number" step="0.1"
             placeholder={unit === 'F' ? 'e.g. 101.4' : 'e.g. 38.5'}
             value={manualTemp}
             onChange={e => setManualTemp(e.target.value)}
@@ -260,23 +231,17 @@ export default function LogTab({ session, creditsData, patient }) {
           />
         </div>
 
-        {/* Date */}
         <div style={{ marginBottom: '12px' }}>
           <label style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#999', display: 'block', marginBottom: '6px' }}>Date</label>
-          <input
-            type="date"
-            value={manualDate}
+          <input type="date" value={manualDate}
             onChange={e => setManualDate(e.target.value)}
             style={{ width: '100%', background: '#f7f6f3', border: '1px solid #e0e0e0', borderRadius: '10px', padding: '12px', color: '#1a1a1a', fontSize: '0.85rem', outline: 'none', fontFamily: 'monospace' }}
           />
         </div>
 
-        {/* Time */}
         <div style={{ marginBottom: '16px' }}>
           <label style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#999', display: 'block', marginBottom: '6px' }}>Time</label>
-          <input
-            type="time"
-            value={manualTime}
+          <input type="time" value={manualTime}
             onChange={e => setManualTime(e.target.value)}
             style={{ width: '100%', background: '#f7f6f3', border: '1px solid #e0e0e0', borderRadius: '10px', padding: '12px', color: '#1a1a1a', fontSize: '0.85rem', outline: 'none', fontFamily: 'monospace' }}
           />
@@ -288,10 +253,9 @@ export default function LogTab({ session, creditsData, patient }) {
         </button>
       </div>
 
-      {/* Saved confirmation */}
       {saved && (
         <div style={{ textAlign: 'center', color: '#00875a', fontSize: '0.82rem', marginBottom: '16px', padding: '12px', background: '#e3fcef', borderRadius: '10px', border: '1px solid #abf5d1' }}>
-          ✓ Reading saved for {patient?.name}!
+          ✓ Reading saved{patient ? ` for ${patient.name}` : ''}!
         </div>
       )}
 

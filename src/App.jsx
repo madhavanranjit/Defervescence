@@ -55,20 +55,17 @@ export default function App() {
   }, [])
 
   async function signInWithGoogleNative() {
-    try {
-      const { Browser } = await import('@capacitor/browser')
-      const { data } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: 'https://defervescence.vercel.app',
-          skipBrowserRedirect: true
-        }
-      })
-      if (data?.url) await Browser.open({ url: data.url })
-    } catch (e) {
-      console.log('Native Google login error:', e)
+  setLoading(true)
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: 'https://defervescence.vercel.app',
+      skipBrowserRedirect: false
     }
-  }
+  })
+  if (error) console.log('Google login error:', error)
+  setLoading(false)
+}
 
   function handleSkip() {
     localStorage.setItem('skipLogin', 'true')
