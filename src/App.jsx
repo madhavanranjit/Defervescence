@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
-import { App as CapApp } from '@capacitor/app'
 import Auth from './components/Auth'
 import Dashboard from './components/Dashboard'
 
@@ -18,17 +17,32 @@ export default function App() {
       setSession(session)
     })
 
-    // Handle deep link callback
-    CapApp.addListener('appUrlOpen', async ({ url }) => {
-      if (url.includes('login-callback')) {
-        const params = new URLSearchParams(url.split('#')[1] || url.split('?')[1])
-        const access_token = params.get('access_token')
-        const refresh_token = params.get('refresh_token')
-        if (access_token) {
-          await supabase.auth.setSession({ access_token, refresh_token })
+    // Handle deep link only on native Android
+    const setupDeepLink = async () => {
+      try {
+        const { App: CapApp } = await import('@capacitor/app')
+        const { isNativePlatform } = await import('@capacitor/core')
+        if (isNativePlatform()) {
+          CapApp.addListener('appUrlOpen', async ({ url }) => {
+            if (url.includes('login-callback')) {
+              const hash = url.split('#')[1]
+              if (hash) {
+                const params = new URLSearchParams(hash)
+                const access_token = params.get('access_token')
+                const refresh_token = params.get('refresh_token')
+                if (access_token) {
+                  await supabase.auth.setSession({ access_token, refresh_token })
+                }
+              }
+            }
+          })
         }
+      } catch (e) {
+        console.log('Not native platform')
       }
-    })
+    }
+
+    setupDeepLink()
 
     return () => subscription.unsubscribe()
   }, [])
