@@ -17,14 +17,19 @@ export default function MedicineTab({ session, creditsData, patient }) {
   useEffect(() => { fetchMedicines() }, [])
 
   async function fetchMedicines() {
-    const { data } = await supabase
-      .from('medicines')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .order('date', { ascending: false })
-      .limit(20)
-    if (data) setMedicines(data)
+  if (!session) {
+    const { getLocalMedicines } = await import('../localData')
+    setMedicines(getLocalMedicines(patient?.id))
+    return
   }
+  const { data } = await supabase
+    .from('medicines')
+    .select('*')
+    .eq('user_id', session.user.id)
+    .order('date', { ascending: false })
+    .limit(20)
+  if (data) setMedicines(data)
+}
 
   function startRec() {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition
@@ -54,15 +59,19 @@ export default function MedicineTab({ session, creditsData, patient }) {
   }
 
   async function doParse(text) {
-    setLoading(true)
-    setParsed(null)
-    setSaved(false)
-    try {
-      const res = await fetch('https://defervescence.vercel.app/api/parse-medicine', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
-      })
+  setLoading(true)
+  setParsed(null)
+  setSaved(false)
+  const now = new Date()
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone
+  const localTime = now.toLocaleTimeString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: true })
+  const localDate = now.toLocaleDateString('en-US', { timeZone: tz, year: 'numeric', month: 'long', day: 'numeric' })
+  try {
+    const res = await fetch('https://defervescence.vercel.app/api/parse-medicine', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, localDate, localTime })
+    })
       const result = await res.json()
       if (result.error) throw new Error(result.error)
       setParsed(result)
@@ -73,25 +82,40 @@ export default function MedicineTab({ session, creditsData, patient }) {
   }
 
   async function saveMedicine() {
-    if (!parsed) return
-   const { error } = await supabase.from('medicines').insert({
-  user_id: session.user.id,
-  patient_id: patient?.id,
-  name: parsed.name,
-  dose: parsed.dose,
-  date: parsed.date,
-  time: parsed.time,
-  date_display: parsed.date_display,
-  time_display: parsed.time_display,
-})
-    if (error) { alert('Save failed: ' + error.message); return }
+  if (!parsed) return
+
+  const medicine = {
+    user_id: session?.user?.id,
+    patient_id: patient?.id,
+    name: parsed.name,
+    dose: parsed.dose,
+    date: parsed.date,
+    time: parsed.time,
+    date_display: parsed.date_display,
+    time_display: parsed.time_display,
+  }
+
+  if (!session) {
+    const { saveLocalMedicine } = await import('../localData')
+    saveLocalMedicine(medicine)
     setSaved(true)
     setParsed(null)
     setTranscript('')
     transcriptRef.current = ''
     setManualText('')
     fetchMedicines()
+    return
   }
+
+  const { error } = await supabase.from('medicines').insert(medicine)
+  if (error) { alert('Save failed: ' + error.message); return }
+  setSaved(true)
+  setParsed(null)
+  setTranscript('')
+  transcriptRef.current = ''
+  setManualText('')
+  fetchMedicines()
+}
 
   return (
     <div style={{ padding: '16px 0 40px' }}>

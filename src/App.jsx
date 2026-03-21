@@ -13,22 +13,23 @@ export default function App() {
   )
 
   useEffect(() => {
-    // Check for OAuth tokens in URL hash (Android redirect)
-    const hash = window.location.hash
-    if (hash && hash.includes('access_token')) {
-      const params = new URLSearchParams(hash.replace('#', ''))
-      const access_token = params.get('access_token')
-      const refresh_token = params.get('refresh_token')
-      if (access_token) {
-        supabase.auth.setSession({ access_token, refresh_token }).then(({ data }) => {
-          if (data.session) {
-            setSession(data.session)
-            window.location.hash = ''
-          }
+    // Try to restore saved session first
+    const savedSession = localStorage.getItem('defervescence-session')
+    if (savedSession) {
+      try {
+        const parsed = JSON.parse(savedSession)
+        supabase.auth.setSession({
+          access_token: parsed.access_token,
+          refresh_token: parsed.refresh_token
+        }).then(({ data }) => {
+          if (data.session) setSession(data.session)
           setLoading(false)
         })
-        return
+      } catch {
+        localStorage.removeItem('defervescence-session')
+        setLoading(false)
       }
+      return
     }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -38,6 +39,15 @@ export default function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
+      if (session) {
+        // Save session manually for Android persistence
+        localStorage.setItem('defervescence-session', JSON.stringify({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token
+        }))
+      } else {
+        localStorage.removeItem('defervescence-session')
+      }
       setLoading(false)
     })
 
@@ -69,6 +79,7 @@ export default function App() {
     localStorage.removeItem('skipLogin')
     localStorage.removeItem('guestPatients')
     localStorage.removeItem('activePatientId')
+    localStorage.removeItem('defervescence-session')
     setSkipLogin(false)
     setSession(null)
   }
@@ -82,8 +93,8 @@ export default function App() {
   if (session) return <Dashboard session={session} onSignOut={handleSignOut} />
   if (skipLogin) return <Dashboard session={null} onSignOut={handleSignOut} />
 
-  return <Auth 
-    onSkip={handleSkip} 
-    onNativeGoogleLogin={isNative() ? signInWithGoogleNative : null} 
+  return <Auth
+    onSkip={handleSkip}
+    onNativeGoogleLogin={isNative() ? signInWithGoogleNative : null}
   />
 }

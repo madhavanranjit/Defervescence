@@ -19,36 +19,54 @@ export default function DoctorTab({ session, patient }) {
   useEffect(() => { fetchAll() }, [patient?.id])
 
   async function fetchAll() {
-  if (!patient?.id || !session) {
+  if (!patient?.id) { setLoading(false); return }
+
+  if (!session) {
+    const { getLocalReadings, getLocalMedicines } = await import('../localData')
+    setReadings(getLocalReadings(patient.id).sort((a,b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)))
+    setMedicines(getLocalMedicines(patient.id).sort((a,b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)))
     setLoading(false)
     return
   }
-    const [r, m] = await Promise.all([
-      supabase.from('readings').select('*')
-        .eq('user_id', session.user.id)
-        .eq('patient_id', patient.id)
-        .order('date').order('time'),
-      supabase.from('medicines').select('*')
-        .eq('user_id', session.user.id)
-        .eq('patient_id', patient.id)
-        .order('date').order('time')
-    ])
-    if (r.data) setReadings(r.data)
-    if (m.data) setMedicines(m.data)
-    setLoading(false)
-  }
+
+  const [r, m] = await Promise.all([
+    supabase.from('readings').select('*')
+      .eq('user_id', session.user.id)
+      .eq('patient_id', patient.id)
+      .order('date').order('time'),
+    supabase.from('medicines').select('*')
+      .eq('user_id', session.user.id)
+      .eq('patient_id', patient.id)
+      .order('date').order('time')
+  ])
+  if (r.data) setReadings(r.data)
+  if (m.data) setMedicines(m.data)
+  setLoading(false)
+}
 
   async function deleteReading(id) {
-    if (!confirm('Delete this reading?')) return
-    await supabase.from('readings').delete().eq('id', id)
+  if (!confirm('Delete this reading?')) return
+  if (!session) {
+    const { deleteLocalReading } = await import('../localData')
+    deleteLocalReading(id)
     fetchAll()
+    return
   }
+  await supabase.from('readings').delete().eq('id', id)
+  fetchAll()
+}
 
-  async function deleteMedicine(id) {
-    if (!confirm('Delete this medicine?')) return
-    await supabase.from('medicines').delete().eq('id', id)
+async function deleteMedicine(id) {
+  if (!confirm('Delete this medicine?')) return
+  if (!session) {
+    const { deleteLocalMedicine } = await import('../localData')
+    deleteLocalMedicine(id)
     fetchAll()
+    return
   }
+  await supabase.from('medicines').delete().eq('id', id)
+  fetchAll()
+}
 
   async function exportChartAsImage() {
     if (!chartRef.current) return

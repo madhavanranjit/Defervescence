@@ -91,39 +91,74 @@ export default function LogTab({ session, creditsData, patient }) {
   }
 
   async function saveVoiceReading() {
-    if (!parsed) return
-    await saveReading({
-      temperature: parsed.temperature,
-      unit: parsed.unit,
-      date: parsed.date,
-      time: parsed.time,
-      date_display: parsed.date_display,
-      time_display: parsed.time_display,
-    })
+  if (!parsed) return
+  const { allowed } = creditsData ? await creditsData.useCredit() : { allowed: true }
+  if (!allowed) {
+    alert('No credits remaining! Please top up to continue.')
+    return
   }
+
+  const reading = {
+    user_id: session?.user?.id,
+    patient_id: patient?.id,
+    temperature: parsed.temperature,
+    unit: parsed.unit,
+    date: parsed.date,
+    time: parsed.time,
+    date_display: parsed.date_display,
+    time_display: parsed.time_display,
+  }
+
+  if (!session) {
+    const { saveLocalReading } = await import('../localData')
+    saveLocalReading(reading)
+    setSaved(true)
+    setParsed(null)
+    setTranscript('')
+    transcriptRef.current = ''
+    return
+  }
+
+  const { error } = await supabase.from('readings').insert(reading)
+  if (error) { alert('Save failed: ' + error.message); return }
+  setSaved(true)
+  setParsed(null)
+  setTranscript('')
+  transcriptRef.current = ''
+}
 
   async function saveManualReading() {
-    if (!manualTemp) { alert('Please enter a temperature'); return }
-    const temp = parseFloat(manualTemp)
-    if (isNaN(temp)) { alert('Please enter a valid temperature'); return }
-    const dateObj = new Date(manualDate + 'T' + manualTime)
-    const date_display = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-    const time_display = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+  if (!manualTemp) { alert('Please enter a temperature'); return }
+  const temp = parseFloat(manualTemp)
+  if (isNaN(temp)) { alert('Please enter a valid temperature'); return }
+  const dateObj = new Date(manualDate + 'T' + manualTime)
+  const date_display = dateObj.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const time_display = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
 
-    const { error } = await supabase.from('readings').insert({
-      user_id: session.user.id,
-      patient_id: patient?.id,
-      temperature: temp,
-      unit,
-      date: manualDate,
-      time: manualTime,
-      date_display,
-      time_display,
-    })
-    if (error) { alert('Save failed: ' + error.message); return }
+  const reading = {
+    user_id: session?.user?.id,
+    patient_id: patient?.id,
+    temperature: temp,
+    unit,
+    date: manualDate,
+    time: manualTime,
+    date_display,
+    time_display,
+  }
+
+  if (!session) {
+    const { saveLocalReading } = await import('../localData')
+    saveLocalReading(reading)
     setSaved(true)
     setManualTemp('')
+    return
   }
+
+  const { error } = await supabase.from('readings').insert(reading)
+  if (error) { alert('Save failed: ' + error.message); return }
+  setSaved(true)
+  setManualTemp('')
+}
 
   return (
     <div style={{ padding: '16px 0 40px' }}>

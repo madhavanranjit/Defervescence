@@ -1,9 +1,11 @@
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
-  const { text } = req.body
+  const { text, localDate, localTime } = req.body
   if (!text) return res.status(400).json({ error: 'No text provided' })
   const now = new Date()
-  const prompt = `Today is ${now.toDateString()}, time is ${now.toLocaleTimeString()}. User said: "${text}". Extract medicine name, dose, and date/time. Return ONLY valid JSON, no markdown: {"name":"medicine name","dose":"e.g. 250mg or null","date":"YYYY-MM-DD","time":"HH:MM","time_display":"e.g. 3:00 PM","date_display":"e.g. March 20, 2026"}. If no date/time, use today/now.`
+  const dateStr = localDate || now.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+  const timeStr = localTime || now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })
+  const prompt = `Today is ${dateStr}, time is ${timeStr}. User said: "${text}". Extract medicine name, dose, and date/time. Return ONLY valid JSON, no markdown: {"name":"medicine name","dose":"e.g. 250mg or null","date":"YYYY-MM-DD","time":"HH:MM","time_display":"e.g. 3:00 PM","date_display":"e.g. March 20, 2026"}. If no date/time, use today/now.`
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
