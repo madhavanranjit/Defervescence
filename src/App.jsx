@@ -40,7 +40,6 @@ export default function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
       if (session) {
-        // Save session manually for Android persistence
         localStorage.setItem('defervescence-session', JSON.stringify({
           access_token: session.access_token,
           refresh_token: session.refresh_token
@@ -51,24 +50,52 @@ export default function App() {
       setLoading(false)
     })
 
+    // Listen for browser close after Google login
+    const setupBrowserListener = async () => {
+      try {
+        const { Browser } = await import('@capacitor/browser')
+        await Browser.addListener('browserFinished', async () => {
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session) {
+            setSession(session)
+            localStorage.setItem('defervescence-session', JSON.stringify({
+              access_token: session.access_token,
+              refresh_token: session.refresh_token
+            }))
+          }
+        })
+      } catch(e) {
+        console.log('Browser listener error:', e)
+      }
+    }
+
+    if (isNative()) setupBrowserListener()
+
     return () => subscription.unsubscribe()
   }, [])
 
- async function signInWithGoogleNative() {
-  setLoading(true)
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: 'https://defervescence.vercel.app',
-      skipBrowserRedirect: false,
-      queryParams: {
-        prompt: 'select_account'
+  async function signInWithGoogleNative() {
+    try {
+      const { Browser } = await import('@capacitor/browser')
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: 'https://defervescence.vercel.app',
+          skipBrowserRedirect: true
+        }
+      })
+      if (error) throw error
+      if (data?.url) {
+        await Browser.open({
+          url: data.url,
+          windowName: '_self',
+          presentationStyle: 'popover'
+        })
       }
+    } catch (e) {
+      console.log('Google login error:', e)
     }
-  })
-  if (error) console.log('Google login error:', error)
-  setLoading(false)
-}
+  }
 
   function handleSkip() {
     localStorage.setItem('skipLogin', 'true')
