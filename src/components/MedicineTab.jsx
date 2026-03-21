@@ -3,7 +3,7 @@ import { supabase } from '../supabase'
 
 const MEDICINES = ['Calpol', 'Dolo', 'Ibuprofen', 'Combiflam', 'Paracetamol', 'Other']
 
-export default function MedicineTab({ session, creditsData }) {
+export default function MedicineTab({ session, creditsData, patient }) {
   const [medicines, setMedicines] = useState([])
   const [isRec, setIsRec] = useState(false)
   const [transcript, setTranscript] = useState('')
@@ -74,15 +74,16 @@ export default function MedicineTab({ session, creditsData }) {
 
   async function saveMedicine() {
     if (!parsed) return
-    const { error } = await supabase.from('medicines').insert({
-      user_id: session.user.id,
-      name: parsed.name,
-      dose: parsed.dose,
-      date: parsed.date,
-      time: parsed.time,
-      date_display: parsed.date_display,
-      time_display: parsed.time_display,
-    })
+   const { error } = await supabase.from('medicines').insert({
+  user_id: session.user.id,
+  patient_id: patient?.id,
+  name: parsed.name,
+  dose: parsed.dose,
+  date: parsed.date,
+  time: parsed.time,
+  date_display: parsed.date_display,
+  time_display: parsed.time_display,
+})
     if (error) { alert('Save failed: ' + error.message); return }
     setSaved(true)
     setParsed(null)

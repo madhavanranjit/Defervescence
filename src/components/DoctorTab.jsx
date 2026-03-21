@@ -3,7 +3,7 @@ import { supabase } from '../supabase'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts'
 import ShareReport from './ShareReport'
 
-export default function DoctorTab({ session }) {
+export default function DoctorTab({ session, patient }) {
   const [readings, setReadings] = useState([])
   const [medicines, setMedicines] = useState([])
   const [loading, setLoading] = useState(true)
@@ -11,17 +11,24 @@ export default function DoctorTab({ session }) {
   const [showReport, setShowReport] = useState(false)
   const [filter, setFilter] = useState('all')
 
-  useEffect(() => { fetchAll() }, [])
+  useEffect(() => { fetchAll() }, [patient?.id])
 
   async function fetchAll() {
-    const [r, m] = await Promise.all([
-      supabase.from('readings').select('*').eq('user_id', session.user.id).order('date').order('time'),
-      supabase.from('medicines').select('*').eq('user_id', session.user.id).order('date').order('time')
-    ])
-    if (r.data) setReadings(r.data)
-    if (m.data) setMedicines(m.data)
-    setLoading(false)
-  }
+  if (!patient?.id) return
+  const [r, m] = await Promise.all([
+    supabase.from('readings').select('*')
+      .eq('user_id', session.user.id)
+      .eq('patient_id', patient.id)
+      .order('date').order('time'),
+    supabase.from('medicines').select('*')
+      .eq('user_id', session.user.id)
+      .eq('patient_id', patient.id)
+      .order('date').order('time')
+  ])
+  if (r.data) setReadings(r.data)
+  if (m.data) setMedicines(m.data)
+  setLoading(false)
+}
 
   async function deleteReading(id) {
     if (!confirm('Delete this reading?')) return

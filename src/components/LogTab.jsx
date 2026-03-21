@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { supabase } from '../supabase'
 
-export default function LogTab({ session, creditsData }) {
+export default function LogTab({ session, creditsData, patient }) {
   const [isRec, setIsRec] = useState(false)
   const [transcript, setTranscript] = useState('')
   const [parsed, setParsed] = useState(null)
@@ -75,14 +75,15 @@ export default function LogTab({ session, creditsData }) {
       return
     }
     const { error } = await supabase.from('readings').insert({
-      user_id: session.user.id,
-      temperature: parsed.temperature,
-      unit: parsed.unit,
-      date: parsed.date,
-      time: parsed.time,
-      date_display: parsed.date_display,
-      time_display: parsed.time_display,
-    })
+  user_id: session.user.id,
+  patient_id: patient?.id,
+  temperature: parsed.temperature,
+  unit: parsed.unit,
+  date: parsed.date,
+  time: parsed.time,
+  date_display: parsed.date_display,
+  time_display: parsed.time_display,
+})
     if (error) { alert('Save failed: ' + error.message); return }
     setSaved(true)
     setParsed(null)

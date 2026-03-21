@@ -1,18 +1,17 @@
 import { useState } from 'react'
 import { supabase } from '../supabase'
 import { useCredits } from '../useCredits'
+import { PatientProvider, usePatient } from '../PatientContext'
+import PatientSelector from './PatientSelector'
 import LogTab from './LogTab'
 import DoctorTab from './DoctorTab'
 import MedicineTab from './MedicineTab'
 import SetupTab from './SetupTab'
 
-export default function Dashboard({ session }) {
+function DashboardInner({ session }) {
   const [tab, setTab] = useState('log')
   const creditsData = useCredits(session)
-
-  async function signOut() {
-    await supabase.auth.signOut()
-  }
+  const { activePatient } = usePatient()
 
   return (
     <div style={s.page}>
@@ -20,13 +19,21 @@ export default function Dashboard({ session }) {
         <h1 style={s.title}>Defer<span style={s.accent}>vescence</span></h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           {!creditsData.loading && (
-            <span style={{ fontSize: '0.65rem', color: creditsData.totalRemaining > 0 ? '#00875a' : '#ef233c', background: creditsData.totalRemaining > 0 ? '#e3fcef' : '#ffe5e8', padding: '4px 10px', borderRadius: '20px', fontWeight: '500' }}>
+            <span style={{ fontSize: '0.65rem', color: creditsData.totalRemaining > 0 ? '#00875a' : '#c0003c', background: creditsData.totalRemaining > 0 ? '#e3fcef' : '#ffe5e8', padding: '4px 10px', borderRadius: '20px', fontWeight: '500' }}>
               {creditsData.totalRemaining > 0 ? `${creditsData.totalRemaining} left` : 'No credits'}
             </span>
           )}
-          <button onClick={signOut} style={s.signOut}>Sign out</button>
+          <button onClick={() => supabase.auth.signOut()} style={s.signOut}>Sign out</button>
         </div>
       </header>
+
+      {/* Patient selector */}
+      <div style={{ padding: '8px 16px', background: '#fff', borderBottom: '1px solid #e0e0e0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <PatientSelector />
+        {activePatient && (
+          <span style={{ fontSize: '0.65rem', color: '#999' }}>{activePatient.relation}</span>
+        )}
+      </div>
 
       <div style={s.tabs}>
         {['log', 'doctor', 'medicines', 'setup'].map(t => (
@@ -39,19 +46,33 @@ export default function Dashboard({ session }) {
       </div>
 
       <div style={s.content}>
-        {tab === 'log' && <LogTab session={session} creditsData={creditsData} />}
-        {tab === 'doctor' && <DoctorTab session={session} />}
-        {tab === 'medicines' && <MedicineTab session={session} creditsData={creditsData} />}
-        {tab === 'setup' && <SetupTab session={session} creditsData={creditsData} />}
+        {activePatient ? <>
+          {tab === 'log' && <LogTab session={session} creditsData={creditsData} patient={activePatient} />}
+          {tab === 'doctor' && <DoctorTab session={session} patient={activePatient} />}
+          {tab === 'medicines' && <MedicineTab session={session} creditsData={creditsData} patient={activePatient} />}
+          {tab === 'setup' && <SetupTab session={session} creditsData={creditsData} />}
+        </> : (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#999', fontSize: '0.8rem' }}>
+            Add a patient to get started
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
+export default function Dashboard({ session }) {
+  return (
+    <PatientProvider session={session}>
+      <DashboardInner session={session} />
+    </PatientProvider>
+  )
+}
+
 const s = {
   page: { minHeight: '100vh', background: '#f7f6f3', color: '#1a1a1a', fontFamily: 'monospace' },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 20px 12px', background: '#fff', borderBottom: '1px solid #e0e0e0' },
-  title: { fontFamily: 'Georgia,serif', fontSize: '1.4rem', color: '#1a1a1a' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px 12px', background: '#fff', borderBottom: '1px solid #e0e0e0' },
+  title: { fontFamily: 'Georgia,serif', fontSize: '1.3rem', color: '#1a1a1a' },
   accent: { color: '#ff6b35', fontStyle: 'italic' },
   signOut: { background: 'none', border: '1px solid #e0e0e0', borderRadius: '8px', color: '#999', fontSize: '0.7rem', padding: '6px 12px', cursor: 'pointer' },
   tabs: { display: 'flex', gap: '4px', background: '#fff', padding: '8px 16px', borderBottom: '1px solid #e0e0e0' },
