@@ -11,34 +11,56 @@ export function PatientProvider({ session, children }) {
   useEffect(() => { fetchPatients() }, [session])
 
   async function fetchPatients() {
-    const { data } = await supabase
-      .from('patients')
-      .select('*')
-      .eq('user_id', session.user.id)
-      .order('created_at')
-    if (data) {
-      setPatients(data)
-      // Load last used patient or default to first
-      const lastId = localStorage.getItem('activePatientId')
-      const found = data.find(p => p.id === lastId)
-      setActivePatient(found || data[0] || null)
-    }
+  if (!session) {
+    const local = JSON.parse(localStorage.getItem('guestPatients') || '[]')
+    setPatients(local)
+    const lastId = localStorage.getItem('activePatientId')
+    const found = local.find(p => p.id === lastId)
+    setActivePatient(found || local[0] || null)
     setLoading(false)
+    return
   }
+  const { data } = await supabase
+    .from('patients')
+    .select('*')
+    .eq('user_id', session.user.id)
+    .order('created_at')
+  if (data) {
+    setPatients(data)
+    const lastId = localStorage.getItem('activePatientId')
+    const found = data.find(p => p.id === lastId)
+    setActivePatient(found || data[0] || null)
+  }
+  setLoading(false)
+}
 
   async function addPatient(name, relation) {
-    const { data, error } = await supabase
-      .from('patients')
-      .insert({ user_id: session.user.id, name, relation })
-      .select()
-      .single()
-    if (data) {
-      setPatients(prev => [...prev, data])
-      setActivePatient(data)
-      localStorage.setItem('activePatientId', data.id)
+  if (!session) {
+    const newPatient = { 
+      id: 'guest_' + Date.now().toString(), 
+      name, 
+      relation, 
+      created_at: new Date().toISOString() 
     }
-    return { data, error }
+    const updated = [...patients, newPatient]
+    localStorage.setItem('guestPatients', JSON.stringify(updated))
+    setPatients(updated)
+    setActivePatient(newPatient)
+    localStorage.setItem('activePatientId', newPatient.id)
+    return { data: newPatient, error: null }
   }
+  const { data, error } = await supabase
+    .from('patients')
+    .insert({ user_id: session.user.id, name, relation })
+    .select()
+    .single()
+  if (data) {
+    setPatients(prev => [...prev, data])
+    setActivePatient(data)
+    localStorage.setItem('activePatientId', data.id)
+  }
+  return { data, error }
+}
 
   async function deletePatient(id) {
     await supabase.from('patients').delete().eq('id', id)

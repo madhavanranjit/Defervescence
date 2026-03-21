@@ -3,9 +3,7 @@ import { supabase } from './supabase'
 import Auth from './components/Auth'
 import Dashboard from './components/Dashboard'
 
-const isNative = () => {
-  return window.Capacitor !== undefined && window.Capacitor.isNativePlatform()
-}
+const isNative = () => typeof window !== 'undefined' && window.Capacitor?.isNativePlatform()
 
 export default function App() {
   const [session, setSession] = useState(null)
@@ -15,6 +13,24 @@ export default function App() {
   )
 
   useEffect(() => {
+    // Check for OAuth tokens in URL hash (Android redirect)
+    const hash = window.location.hash
+    if (hash && hash.includes('access_token')) {
+      const params = new URLSearchParams(hash.replace('#', ''))
+      const access_token = params.get('access_token')
+      const refresh_token = params.get('refresh_token')
+      if (access_token) {
+        supabase.auth.setSession({ access_token, refresh_token }).then(({ data }) => {
+          if (data.session) {
+            setSession(data.session)
+            window.location.hash = ''
+          }
+          setLoading(false)
+        })
+        return
+      }
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setLoading(false)
@@ -22,50 +38,25 @@ export default function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
+      setLoading(false)
     })
-
-    // Handle deep link on native Android
-    if (isNative()) {
-      setupDeepLink()
-    }
 
     return () => subscription.unsubscribe()
   }, [])
 
-  async function setupDeepLink() {
-    try {
-      const { App: CapApp } = await import('@capacitor/app')
-      CapApp.addListener('appUrlOpen', async ({ url }) => {
-        if (url.includes('login-callback') || url.includes('access_token')) {
-          const hashPart = url.split('#')[1] || url.split('?')[1] || ''
-          const params = new URLSearchParams(hashPart)
-          const access_token = params.get('access_token')
-          const refresh_token = params.get('refresh_token')
-          if (access_token) {
-            await supabase.auth.setSession({ access_token, refresh_token })
-          }
-        }
-      })
-    } catch (e) {
-      console.log('Deep link setup failed:', e)
-    }
-  }
-
   async function signInWithGoogleNative() {
     try {
       const { Browser } = await import('@capacitor/browser')
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { data } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'com.defervescence.app://login-callback',
+          redirectTo: 'https://defervescence.vercel.app',
           skipBrowserRedirect: true
         }
       })
-      if (data?.url) {
-        await Browser.open({ url: data.url })
-      }
+      if (data?.url) await Browser.open({ url: data.url })
     } catch (e) {
-      console.log('Native Google login failed:', e)
+      console.log('Native Google login error:', e)
     }
   }
 
@@ -76,7 +67,10 @@ export default function App() {
 
   function handleSignOut() {
     localStorage.removeItem('skipLogin')
+    localStorage.removeItem('guestPatients')
+    localStorage.removeItem('activePatientId')
     setSkipLogin(false)
+    setSession(null)
   }
 
   if (loading) return (
@@ -88,5 +82,8 @@ export default function App() {
   if (session) return <Dashboard session={session} onSignOut={handleSignOut} />
   if (skipLogin) return <Dashboard session={null} onSignOut={handleSignOut} />
 
-  return <Auth onSkip={handleSkip} onNativeGoogleLogin={isNative() ? signInWithGoogleNative : null} />
+  return <Auth 
+    onSkip={handleSkip} 
+    onNativeGoogleLogin={isNative() ? signInWithGoogleNative : null} 
+  />
 }
