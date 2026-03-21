@@ -10,6 +10,9 @@ export default function DoctorTab({ session, patient }) {
   const [unit, setUnit] = useState(localStorage.getItem('preferredUnit') || 'F')
   const [showReport, setShowReport] = useState(false)
   const [filter, setFilter] = useState('all')
+const [customFrom, setCustomFrom] = useState('')
+const [customTo, setCustomTo] = useState('')
+const [showCustom, setShowCustom] = useState(false)
 
   useEffect(() => { fetchAll() }, [patient?.id])
 
@@ -70,12 +73,15 @@ export default function DoctorTab({ session, patient }) {
 
   // Date filter
   function filterReadings(data) {
-    if (filter === 'all') return data
-    const days = filter === '7d' ? 7 : 30
-    const cutoff = new Date()
-    cutoff.setDate(cutoff.getDate() - days)
-    return data.filter(r => new Date(r.date) >= cutoff)
+  if (filter === 'all') return data
+  if (filter === 'custom' && customFrom && customTo) {
+    return data.filter(r => r.date >= customFrom && r.date <= customTo)
   }
+  const days = filter === '3d' ? 3 : filter === '7d' ? 7 : 30
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - days)
+  return data.filter(r => new Date(r.date) >= cutoff)
+}
 
   const filteredReadings = filterReadings(readings)
   const filteredMedicines = filterReadings(medicines)
@@ -122,14 +128,31 @@ export default function DoctorTab({ session, patient }) {
       </div>
 
       {/* Date filter */}
-      <div style={{ display: 'flex', gap: '6px', marginBottom: '16px' }}>
-        {[['7d', 'Last 7 days'], ['30d', 'Last 30 days'], ['all', 'All time']].map(([val, label]) => (
-          <button key={val} onClick={() => setFilter(val)}
-            style={{ padding: '6px 12px', borderRadius: '20px', border: '1px solid', borderColor: filter === val ? '#ff6b35' : '#e0e0e0', background: filter === val ? '#fff5f1' : '#fff', color: filter === val ? '#ff6b35' : '#999', fontSize: '0.68rem', cursor: 'pointer', fontWeight: filter === val ? '500' : '400' }}>
-            {label}
-          </button>
-        ))}
+<div style={{ marginBottom: '16px' }}>
+  <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap' }}>
+    {[['3d', '3 days'], ['7d', '7 days'], ['30d', '30 days'], ['all', 'All'], ['custom', 'Custom']].map(([val, label]) => (
+      <button key={val} onClick={() => { setFilter(val); setShowCustom(val === 'custom') }}
+        style={{ padding: '6px 12px', borderRadius: '20px', border: '1px solid', borderColor: filter === val ? '#ff6b35' : '#e0e0e0', background: filter === val ? '#fff5f1' : '#fff', color: filter === val ? '#ff6b35' : '#999', fontSize: '0.68rem', cursor: 'pointer', fontWeight: filter === val ? '500' : '400' }}>
+        {label}
+      </button>
+    ))}
+  </div>
+
+  {showCustom && (
+    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '12px', padding: '10px 12px' }}>
+      <div style={{ flex: 1 }}>
+        <label style={{ fontSize: '0.6rem', textTransform: 'uppercase', color: '#999', letterSpacing: '0.08em', display: 'block', marginBottom: '4px' }}>From</label>
+        <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
+          style={{ width: '100%', background: '#f7f6f3', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '8px', color: '#1a1a1a', fontSize: '0.78rem', outline: 'none' }} />
       </div>
+      <div style={{ flex: 1 }}>
+        <label style={{ fontSize: '0.6rem', textTransform: 'uppercase', color: '#999', letterSpacing: '0.08em', display: 'block', marginBottom: '4px' }}>To</label>
+        <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
+          style={{ width: '100%', background: '#f7f6f3', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '8px', color: '#1a1a1a', fontSize: '0.78rem', outline: 'none' }} />
+      </div>
+    </div>
+  )}
+</div>
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '16px' }}>
