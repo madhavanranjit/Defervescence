@@ -206,10 +206,24 @@ const [showCustom, setShowCustom] = useState(false)
   )
 })}
       <Line type="monotone" dataKey="temp" stroke="#ff6b35" strokeWidth={2.5}
-        dot={({ cx, cy, payload }) => (
-          <circle key={cx} cx={cx} cy={cy} r={5} fill={tempColor(payload.original, payload.unit)} stroke="#fff" strokeWidth={1.5} />
+  dot={({ cx, cy, payload, index }) => {
+    const hasMed = filteredMedicines.some(m => {
+      const mLabel = m.date ? `${new Date(m.date + 'T12:00:00').getDate()}/${new Date(m.date + 'T12:00:00').getMonth() + 1}` : null
+      return mLabel === payload.label
+    })
+    return (
+      <g key={cx}>
+        <circle cx={cx} cy={cy} r={5} fill={tempColor(payload.original, payload.unit)} stroke="#fff" strokeWidth={1.5} />
+        {hasMed && (
+          <>
+            <circle cx={cx} cy={cy - 16} r={8} fill="#fff5f1" stroke="#ff6b35" strokeWidth={1} />
+            <text x={cx} y={cy - 12} textAnchor="middle" fontSize={10}>💊</text>
+          </>
         )}
-      />
+      </g>
+    )
+  }}
+/>
     </LineChart>
   </ResponsiveContainer>
   <div style={{ display: 'flex', gap: '14px', padding: '8px 8px 0', flexWrap: 'wrap' }}>
