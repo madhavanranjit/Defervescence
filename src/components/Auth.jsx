@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../supabase'
 
-export default function Auth({ onSkip }) {
+export default function Auth({ onSkip, onNativeGoogleLogin }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [phone, setPhone] = useState('')
@@ -10,15 +10,19 @@ export default function Auth({ onSkip }) {
   const [showOTP, setShowOTP] = useState(false)
 
   async function signInWithGoogle() {
-    setLoading(true)
-    setError('')
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin }
-    })
-    if (error) setError(error.message)
-    setLoading(false)
+  if (onNativeGoogleLogin) {
+    await onNativeGoogleLogin()
+    return
   }
+  setLoading(true)
+  setError('')
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin }
+  })
+  if (error) setError(error.message)
+  setLoading(false)
+}
 
   async function sendOTP() {
     if (phone.length < 10) return
