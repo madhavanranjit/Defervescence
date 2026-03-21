@@ -2,14 +2,6 @@ import { useState } from 'react'
 import { supabase } from '../supabase'
 
 export default function SetupTab({ session, creditsData }) {
-  const [patientName, setPatientName] = useState(localStorage.getItem('patientName') || '')
-  const [nameSaved, setNameSaved] = useState(!!localStorage.getItem('patientName'))
-
-  function saveName() {
-    if (!patientName.trim()) return
-    localStorage.setItem('patientName', patientName.trim())
-    setNameSaved(true)
-  }
 
   return (
     <div style={{ padding: '16px 0 40px' }}>
@@ -20,18 +12,7 @@ export default function SetupTab({ session, creditsData }) {
         <button onClick={() => supabase.auth.signOut()} style={s.signOutBtn}>Sign out</button>
       </div>
 
-      <div style={s.card}>
-        <p style={s.cardTitle}>Patient Name</p>
-        <p style={s.hint}>Shown on the doctor report</p>
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-          <input style={s.input} placeholder="e.g. Rahul Sharma"
-            value={patientName}
-            onChange={e => { setPatientName(e.target.value); setNameSaved(false) }} />
-          <button onClick={saveName} style={s.saveBtn}>Save</button>
-        </div>
-        {nameSaved && <p style={{ fontSize: '0.65rem', color: '#00875a' }}>✓ Name saved</p>}
-      </div>
-
+    
       <div style={s.card}>
         <p style={s.cardTitle}>Credits</p>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '16px' }}>
