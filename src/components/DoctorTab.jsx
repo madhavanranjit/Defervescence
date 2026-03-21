@@ -236,10 +236,11 @@ export default function DoctorTab({ session, patient }) {
       {/* Share report modal */}
       {showReport && (
         <ShareReport
-          readings={filteredReadings}
-          medicines={filteredMedicines}
-          onClose={() => setShowReport(false)}
-        />
+  readings={filteredReadings}
+  medicines={filteredMedicines}
+  patientName={patient?.name}
+  onClose={() => setShowReport(false)}
+/>
       )}
 
     </div>
