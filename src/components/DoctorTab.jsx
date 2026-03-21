@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../supabase'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from 'recharts'
 import ShareReport from './ShareReport'
+import html2canvas from 'html2canvas'
 
 export default function DoctorTab({ session, patient }) {
   const [readings, setReadings] = useState([])
@@ -10,28 +11,29 @@ export default function DoctorTab({ session, patient }) {
   const [unit, setUnit] = useState(localStorage.getItem('preferredUnit') || 'F')
   const [showReport, setShowReport] = useState(false)
   const [filter, setFilter] = useState('all')
-const [customFrom, setCustomFrom] = useState('')
-const [customTo, setCustomTo] = useState('')
-const [showCustom, setShowCustom] = useState(false)
+  const [customFrom, setCustomFrom] = useState('')
+  const [customTo, setCustomTo] = useState('')
+  const [showCustom, setShowCustom] = useState(false)
+  const chartRef = useRef(null)
 
   useEffect(() => { fetchAll() }, [patient?.id])
 
   async function fetchAll() {
-  if (!patient?.id) return
-  const [r, m] = await Promise.all([
-    supabase.from('readings').select('*')
-      .eq('user_id', session.user.id)
-      .eq('patient_id', patient.id)
-      .order('date').order('time'),
-    supabase.from('medicines').select('*')
-      .eq('user_id', session.user.id)
-      .eq('patient_id', patient.id)
-      .order('date').order('time')
-  ])
-  if (r.data) setReadings(r.data)
-  if (m.data) setMedicines(m.data)
-  setLoading(false)
-}
+    if (!patient?.id) return
+    const [r, m] = await Promise.all([
+      supabase.from('readings').select('*')
+        .eq('user_id', session.user.id)
+        .eq('patient_id', patient.id)
+        .order('date').order('time'),
+      supabase.from('medicines').select('*')
+        .eq('user_id', session.user.id)
+        .eq('patient_id', patient.id)
+        .order('date').order('time')
+    ])
+    if (r.data) setReadings(r.data)
+    if (m.data) setMedicines(m.data)
+    setLoading(false)
+  }
 
   async function deleteReading(id) {
     if (!confirm('Delete this reading?')) return
@@ -43,6 +45,29 @@ const [showCustom, setShowCustom] = useState(false)
     if (!confirm('Delete this medicine?')) return
     await supabase.from('medicines').delete().eq('id', id)
     fetchAll()
+  }
+
+  async function exportChartAsImage() {
+    if (!chartRef.current) return
+    const canvas = await html2canvas(chartRef.current, {
+      backgroundColor: '#ffffff',
+      scale: 2,
+    })
+    const image = canvas.toDataURL('image/png')
+    if (navigator.share) {
+      const blob = await (await fetch(image)).blob()
+      const file = new File([blob], 'fever-chart.png', { type: 'image/png' })
+      await navigator.share({
+        title: `Fever Report — ${patient?.name}`,
+        text: `Fever chart for ${patient?.name} — Shared via Defervescence`,
+        files: [file]
+      })
+    } else {
+      const link = document.createElement('a')
+      link.download = `fever-chart-${patient?.name || 'report'}.png`
+      link.href = image
+      link.click()
+    }
   }
 
   function saveUnit(u) {
@@ -71,28 +96,27 @@ const [showCustom, setShowCustom] = useState(false)
     return f >= 103 ? 'High' : f >= 100.4 ? 'Mild fever' : 'Normal'
   }
 
-  // Date filter
   function filterReadings(data) {
-  if (filter === 'all') return data
-  if (filter === 'custom' && customFrom && customTo) {
-    return data.filter(r => r.date >= customFrom && r.date <= customTo)
+    if (filter === 'all') return data
+    if (filter === 'custom' && customFrom && customTo) {
+      return data.filter(r => r.date >= customFrom && r.date <= customTo)
+    }
+    const days = filter === '3d' ? 3 : filter === '7d' ? 7 : 30
+    const cutoff = new Date()
+    cutoff.setDate(cutoff.getDate() - days)
+    return data.filter(r => new Date(r.date) >= cutoff)
   }
-  const days = filter === '3d' ? 3 : filter === '7d' ? 7 : 30
-  const cutoff = new Date()
-  cutoff.setDate(cutoff.getDate() - days)
-  return data.filter(r => new Date(r.date) >= cutoff)
-}
 
   const filteredReadings = filterReadings(readings)
   const filteredMedicines = filterReadings(medicines)
 
   const chartData = filteredReadings.map(r => ({
-  label: r.date ? `${new Date(r.date + 'T12:00:00').getDate()}/${new Date(r.date + 'T12:00:00').getMonth() + 1}` : r.date,
-  fullDate: r.date,
-  temp: convert(r.temperature, r.unit),
-  unit: r.unit,
-  original: r.temperature,
-}))
+    label: r.date ? `${new Date(r.date + 'T12:00:00').getDate()}/${new Date(r.date + 'T12:00:00').getMonth() + 1}` : r.date,
+    fullDate: r.date,
+    temp: convert(r.temperature, r.unit),
+    unit: r.unit,
+    original: r.temperature,
+  }))
 
   const temps = filteredReadings.map(r => convert(r.temperature, r.unit))
   const peak = temps.length ? Math.max(...temps) : 0
@@ -129,31 +153,30 @@ const [showCustom, setShowCustom] = useState(false)
       </div>
 
       {/* Date filter */}
-<div style={{ marginBottom: '16px' }}>
-  <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap' }}>
-    {[['3d', '3 days'], ['7d', '7 days'], ['30d', '30 days'], ['all', 'All'], ['custom', 'Custom']].map(([val, label]) => (
-      <button key={val} onClick={() => { setFilter(val); setShowCustom(val === 'custom') }}
-        style={{ padding: '6px 12px', borderRadius: '20px', border: '1px solid', borderColor: filter === val ? '#ff6b35' : '#e0e0e0', background: filter === val ? '#fff5f1' : '#fff', color: filter === val ? '#ff6b35' : '#999', fontSize: '0.68rem', cursor: 'pointer', fontWeight: filter === val ? '500' : '400' }}>
-        {label}
-      </button>
-    ))}
-  </div>
-
-  {showCustom && (
-    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '12px', padding: '10px 12px' }}>
-      <div style={{ flex: 1 }}>
-        <label style={{ fontSize: '0.6rem', textTransform: 'uppercase', color: '#999', letterSpacing: '0.08em', display: 'block', marginBottom: '4px' }}>From</label>
-        <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
-          style={{ width: '100%', background: '#f7f6f3', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '8px', color: '#1a1a1a', fontSize: '0.78rem', outline: 'none' }} />
+      <div style={{ marginBottom: '16px' }}>
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap' }}>
+          {[['3d', '3 days'], ['7d', '7 days'], ['30d', '30 days'], ['all', 'All'], ['custom', 'Custom']].map(([val, label]) => (
+            <button key={val} onClick={() => { setFilter(val); setShowCustom(val === 'custom') }}
+              style={{ padding: '6px 12px', borderRadius: '20px', border: '1px solid', borderColor: filter === val ? '#ff6b35' : '#e0e0e0', background: filter === val ? '#fff5f1' : '#fff', color: filter === val ? '#ff6b35' : '#999', fontSize: '0.68rem', cursor: 'pointer', fontWeight: filter === val ? '500' : '400' }}>
+              {label}
+            </button>
+          ))}
+        </div>
+        {showCustom && (
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '12px', padding: '10px 12px' }}>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: '0.6rem', textTransform: 'uppercase', color: '#999', letterSpacing: '0.08em', display: 'block', marginBottom: '4px' }}>From</label>
+              <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
+                style={{ width: '100%', background: '#f7f6f3', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '8px', color: '#1a1a1a', fontSize: '0.78rem', outline: 'none' }} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <label style={{ fontSize: '0.6rem', textTransform: 'uppercase', color: '#999', letterSpacing: '0.08em', display: 'block', marginBottom: '4px' }}>To</label>
+              <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
+                style={{ width: '100%', background: '#f7f6f3', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '8px', color: '#1a1a1a', fontSize: '0.78rem', outline: 'none' }} />
+            </div>
+          </div>
+        )}
       </div>
-      <div style={{ flex: 1 }}>
-        <label style={{ fontSize: '0.6rem', textTransform: 'uppercase', color: '#999', letterSpacing: '0.08em', display: 'block', marginBottom: '4px' }}>To</label>
-        <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
-          style={{ width: '100%', background: '#f7f6f3', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '8px', color: '#1a1a1a', fontSize: '0.78rem', outline: 'none' }} />
-      </div>
-    </div>
-  )}
-</div>
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '16px' }}>
@@ -170,70 +193,61 @@ const [showCustom, setShowCustom] = useState(false)
       </div>
 
       {/* Chart */}
-<div style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '18px', padding: '16px 8px', marginBottom: '16px' }}>
-  <p style={{ fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#999', marginBottom: '12px', paddingLeft: '8px' }}>
-    Temperature over time (°{unit})
-  </p>
-  <ResponsiveContainer width="100%" height={200}>
-    <LineChart data={chartData} margin={{ top: 5, right: 16, left: -10, bottom: 5 }}>
-      <CartesianGrid strokeDasharray="3 3" stroke="#f0eeea" />
-      <XAxis dataKey="label" tick={{ fill: '#999', fontSize: 9 }} />
-      <YAxis domain={['auto', 'auto']} tick={{ fill: '#999', fontSize: 9 }} tickFormatter={v => v + '°'} />
-      <Tooltip
-        contentStyle={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '0.75rem' }}
-        labelStyle={{ color: '#999' }}
-        formatter={v => [v + '°' + unit, 'Temp']}
-      />
-      <ReferenceLine
-        y={unit === 'F' ? 100.4 : 38}
-        stroke="rgba(255,107,53,0.5)"
-        strokeDasharray="4 4"
-        label={{ value: unit === 'F' ? '100.4°F' : '38°C', fill: '#ff6b35', fontSize: 9, position: 'right' }}
-      />
-      {/* Medicine reference lines */}
-      {filteredMedicines.map((m, i) => {
-  const mLabel = m.date ? `${new Date(m.date + 'T12:00:00').getDate()}/${new Date(m.date + 'T12:00:00').getMonth() + 1}` : null
-  if (!mLabel) return null
-  return (
-    <ReferenceLine
-      key={m.id}
-      x={mLabel}
-      stroke="#ff6b35"
-      strokeDasharray="2 2"
-      strokeOpacity={0.5}
-      label={{ value: '💊', position: 'insideTopLeft', fontSize: 12, offset: i * 14 }}
-    />
-  )
-})}
-      <Line type="monotone" dataKey="temp" stroke="#ff6b35" strokeWidth={2.5}
-  dot={({ cx, cy, payload, index }) => {
-    const hasMed = filteredMedicines.some(m => {
-      const mLabel = m.date ? `${new Date(m.date + 'T12:00:00').getDate()}/${new Date(m.date + 'T12:00:00').getMonth() + 1}` : null
-      return mLabel === payload.label
-    })
-    return (
-      <g key={cx}>
-        <circle cx={cx} cy={cy} r={5} fill={tempColor(payload.original, payload.unit)} stroke="#fff" strokeWidth={1.5} />
-        {hasMed && (
-          <>
-            <circle cx={cx} cy={cy - 16} r={8} fill="#fff5f1" stroke="#ff6b35" strokeWidth={1} />
-            <text x={cx} y={cy - 12} textAnchor="middle" fontSize={10}>💊</text>
-          </>
-        )}
-      </g>
-    )
-  }}
-/>
-    </LineChart>
-  </ResponsiveContainer>
-  <div style={{ display: 'flex', gap: '14px', padding: '8px 8px 0', flexWrap: 'wrap' }}>
-    {[['#c0003c', 'High'], ['#8a6000', 'Mild fever'], ['#00875a', 'Normal'], ['#ff6b35', '💊 Medicine']].map(([c, l]) => (
-      <span key={l} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.61rem', color: '#999' }}>
-        <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: c, flexShrink: 0 }} />{l}
-      </span>
-    ))}
-  </div>
-</div>
+      <div ref={chartRef} style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '18px', padding: '16px 8px', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', paddingLeft: '8px', paddingRight: '8px' }}>
+          <p style={{ fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#999', margin: 0 }}>
+            Temperature over time (°{unit})
+          </p>
+          <button onClick={exportChartAsImage}
+            style={{ background: 'none', border: '1px solid #e0e0e0', borderRadius: '8px', padding: '5px 10px', fontSize: '0.65rem', color: '#999', cursor: 'pointer' }}>
+            📸 Share chart
+          </button>
+        </div>
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart data={chartData} margin={{ top: 5, right: 16, left: -10, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0eeea" />
+            <XAxis dataKey="label" tick={{ fill: '#999', fontSize: 9 }} />
+            <YAxis domain={['auto', 'auto']} tick={{ fill: '#999', fontSize: 9 }} tickFormatter={v => v + '°'} />
+            <Tooltip
+              contentStyle={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '0.75rem' }}
+              labelStyle={{ color: '#999' }}
+              formatter={v => [v + '°' + unit, 'Temp']}
+            />
+            <ReferenceLine
+              y={unit === 'F' ? 100.4 : 38}
+              stroke="rgba(255,107,53,0.5)"
+              strokeDasharray="4 4"
+              label={{ value: unit === 'F' ? '100.4°F' : '38°C', fill: '#ff6b35', fontSize: 9, position: 'right' }}
+            />
+            <Line type="monotone" dataKey="temp" stroke="#ff6b35" strokeWidth={2.5}
+              dot={({ cx, cy, payload }) => {
+                const hasMed = filteredMedicines.some(m => {
+                  const mLabel = m.date ? `${new Date(m.date + 'T12:00:00').getDate()}/${new Date(m.date + 'T12:00:00').getMonth() + 1}` : null
+                  return mLabel === payload.label
+                })
+                return (
+                  <g key={cx}>
+                    <circle cx={cx} cy={cy} r={5} fill={tempColor(payload.original, payload.unit)} stroke="#fff" strokeWidth={1.5} />
+                    {hasMed && (
+                      <>
+                        <circle cx={cx} cy={cy - 16} r={8} fill="#fff5f1" stroke="#ff6b35" strokeWidth={1} />
+                        <text x={cx} y={cy - 12} textAnchor="middle" fontSize={10}>💊</text>
+                      </>
+                    )}
+                  </g>
+                )
+              }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+        <div style={{ display: 'flex', gap: '14px', padding: '8px 8px 0', flexWrap: 'wrap' }}>
+          {[['#c0003c', 'High'], ['#8a6000', 'Mild fever'], ['#00875a', 'Normal'], ['#ff6b35', '💊 Medicine']].map(([c, l]) => (
+            <span key={l} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.61rem', color: '#999' }}>
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: c, flexShrink: 0 }} />{l}
+            </span>
+          ))}
+        </div>
+      </div>
 
       {/* Readings table */}
       <div style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '18px', padding: '16px', marginBottom: '16px' }}>
@@ -289,11 +303,11 @@ const [showCustom, setShowCustom] = useState(false)
       {/* Share report modal */}
       {showReport && (
         <ShareReport
-  readings={filteredReadings}
-  medicines={filteredMedicines}
-  patientName={patient?.name}
-  onClose={() => setShowReport(false)}
-/>
+          readings={filteredReadings}
+          medicines={filteredMedicines}
+          patientName={patient?.name}
+          onClose={() => setShowReport(false)}
+        />
       )}
 
     </div>
