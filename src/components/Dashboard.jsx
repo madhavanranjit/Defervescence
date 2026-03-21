@@ -23,7 +23,14 @@ function DashboardInner({ session }) {
               {creditsData.totalRemaining > 0 ? `${creditsData.totalRemaining} left` : 'No credits'}
             </span>
           )}
-          <button onClick={() => supabase.auth.signOut()} style={s.signOut}>Sign out</button>
+          <button onClick={async () => {
+  try {
+    if (session) await supabase.auth.signOut()
+  } catch(e) {
+    console.log('signout error', e)
+  }
+  onSignOut()
+}} style={s.signOut}>Sign out</button>
         </div>
       </header>
 

@@ -8,8 +8,10 @@ export default function SetupTab({ session, creditsData }) {
 
       <div style={s.card}>
         <p style={s.label}>Logged in as</p>
-        <p style={s.value}>{session.user.email || session.user.phone}</p>
-        <button onClick={() => supabase.auth.signOut()} style={s.signOutBtn}>Sign out</button>
+        <p style={s.value}>{session?.user?.email || session?.user?.phone || 'Guest user'}</p>
+        <button onClick={() => { if(session) supabase.auth.signOut(); else onSignOut() }} style={s.signOutBtn}>
+  {session ? 'Sign out' : 'Exit guest mode'}
+</button>
       </div>
 
     

@@ -19,7 +19,10 @@ export default function DoctorTab({ session, patient }) {
   useEffect(() => { fetchAll() }, [patient?.id])
 
   async function fetchAll() {
-    if (!patient?.id) return
+  if (!patient?.id || !session) {
+    setLoading(false)
+    return
+  }
     const [r, m] = await Promise.all([
       supabase.from('readings').select('*')
         .eq('user_id', session.user.id)

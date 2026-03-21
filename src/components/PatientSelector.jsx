@@ -60,8 +60,8 @@ export default function PatientSelector() {
                 <span style={{ fontSize: '0.65rem', color: '#999', marginLeft: '6px' }}>{p.relation}</span>
               </button>
               {patients.length > 1 && (
-                <button onClick={() => { if (confirm('Delete ' + p.name + '?')) deletePatient(p.id) }}
-                  style={{ background: 'none', border: 'none', color: '#ddd', cursor: 'pointer', fontSize: '0.75rem' }}>🗑</button>
+                <button onClick={(e) => { e.stopPropagation(); if (confirm('Delete ' + p.name + '?')) deletePatient(p.id) }}
+  style={{ background: 'none', border: 'none', color: '#bbb', cursor: 'pointer', fontSize: '1rem', padding: '4px 8px', flexShrink: 0 }}>🗑</button>
               )}
             </div>
           ))}
@@ -115,5 +115,5 @@ const s = {
   addBtn: { width: '100%', background: '#ff6b35', color: '#fff', border: 'none', borderRadius: '10px', padding: '13px', fontSize: '0.85rem', fontWeight: '500', cursor: 'pointer' },
   pill: { background: '#fff5f1', border: '1px solid #ffd5c2', borderRadius: '20px', padding: '6px 12px', fontSize: '0.72rem', color: '#ff6b35', cursor: 'pointer', fontWeight: '500', display: 'flex', alignItems: 'center' },
   dropdown: { position: 'absolute', top: '36px', left: 0, background: '#fff', border: '1px solid #e0e0e0', borderRadius: '14px', boxShadow: '0 4px 20px rgba(0,0,0,0.1)', zIndex: 100, minWidth: '200px', overflow: 'hidden' },
-  dropItem: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderBottom: '1px solid #f0eeea', cursor: 'pointer' },
+  dropItem: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', borderBottom: '1px solid #f0eeea' },
 }
