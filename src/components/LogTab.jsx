@@ -78,36 +78,39 @@ export default function LogTab({ session, creditsData, patient }) {
   }
 
   async function saveVoiceReading() {
-    if (!parsed) return
-    const { allowed } = creditsData ? await creditsData.useCredit() : { allowed: true }
+  if (!parsed) return
+  
+  if (session && creditsData) {
+    const { allowed } = await creditsData.useCredit()
     if (!allowed) {
       alert('No credits remaining! Please top up to continue.')
       return
     }
-
-    const reading = {
-      user_id: session?.user?.id,
-      patient_id: patient?.id,
-      temperature: parsed.temperature,
-      unit: parsed.unit,
-      date: parsed.date,
-      time: parsed.time,
-      date_display: parsed.date_display,
-      time_display: parsed.time_display,
-    }
-
-    if (!session) {
-      const { saveLocalReading } = await import('../localData')
-      saveLocalReading(reading)
-    } else {
-      const { error } = await supabase.from('readings').insert(reading)
-      if (error) { alert('Save failed: ' + error.message); return }
-    }
-    setSaved(true)
-    setParsed(null)
-    setTranscript('')
-    transcriptRef.current = ''
   }
+
+  const reading = {
+    user_id: session?.user?.id,
+    patient_id: patient?.id,
+    temperature: parsed.temperature,
+    unit: parsed.unit,
+    date: parsed.date,
+    time: parsed.time,
+    date_display: parsed.date_display,
+    time_display: parsed.time_display,
+  }
+
+  if (!session) {
+    const { saveLocalReading } = await import('../localData')
+    saveLocalReading(reading)
+  } else {
+    const { error } = await supabase.from('readings').insert(reading)
+    if (error) { alert('Save failed: ' + error.message); return }
+  }
+  setSaved(true)
+  setParsed(null)
+  setTranscript('')
+  transcriptRef.current = ''
+}
 
   async function saveManualReading() {
     if (!manualTemp) { alert('Please enter a temperature'); return }
