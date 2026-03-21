@@ -16,5 +16,6 @@ public class MainActivity extends BridgeActivity {
         settings.setAllowFileAccess(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
+        settings.setMediaPlaybackRequiresUserGesture(false);
     }
 }

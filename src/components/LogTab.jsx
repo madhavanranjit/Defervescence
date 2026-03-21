@@ -68,8 +68,8 @@ export default function LogTab({ session, creditsData, patient }) {
       if (result.error) throw new Error(result.error)
       setParsed(result)
     } catch (e) {
-      alert('Could not parse. Try again.')
-    }
+  alert('Error: ' + e.message + ' — ' + e.toString())
+}
     setLoading(false)
   }
 
