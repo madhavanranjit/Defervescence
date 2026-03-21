@@ -54,13 +54,16 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
-  async function signInWithGoogleNative() {
+ async function signInWithGoogleNative() {
   setLoading(true)
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo: 'https://defervescence.vercel.app',
-      skipBrowserRedirect: false
+      skipBrowserRedirect: false,
+      queryParams: {
+        prompt: 'select_account'
+      }
     }
   })
   if (error) console.log('Google login error:', error)

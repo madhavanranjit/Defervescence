@@ -18,7 +18,12 @@ export default function Auth({ onSkip, onNativeGoogleLogin }) {
   setError('')
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: window.location.origin }
+    options: { 
+      redirectTo: window.location.origin,
+      queryParams: {
+        prompt: 'select_account'
+      }
+    }
   })
   if (error) setError(error.message)
   setLoading(false)
