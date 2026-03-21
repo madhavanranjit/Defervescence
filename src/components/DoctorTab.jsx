@@ -191,20 +191,20 @@ const [showCustom, setShowCustom] = useState(false)
         label={{ value: unit === 'F' ? '100.4°F' : '38°C', fill: '#ff6b35', fontSize: 9, position: 'right' }}
       />
       {/* Medicine reference lines */}
-      {filteredMedicines.map(m => {
-        const matchingIndex = chartData.findIndex(d => d.fullDate === m.date)
-        if (matchingIndex === -1) return null
-        return (
-          <ReferenceLine
-            key={m.id}
-            x={chartData[matchingIndex]?.label}
-            stroke="#ff6b35"
-            strokeDasharray="2 2"
-            strokeOpacity={0.4}
-            label={{ value: '💊', position: 'top', fontSize: 10 }}
-          />
-        )
-      })}
+      {filteredMedicines.map((m, i) => {
+  const mLabel = m.date ? `${new Date(m.date + 'T12:00:00').getDate()}/${new Date(m.date + 'T12:00:00').getMonth() + 1}` : null
+  if (!mLabel) return null
+  return (
+    <ReferenceLine
+      key={m.id}
+      x={mLabel}
+      stroke="#ff6b35"
+      strokeDasharray="2 2"
+      strokeOpacity={0.5}
+      label={{ value: '💊', position: 'insideTopLeft', fontSize: 12, offset: i * 14 }}
+    />
+  )
+})}
       <Line type="monotone" dataKey="temp" stroke="#ff6b35" strokeWidth={2.5}
         dot={({ cx, cy, payload }) => (
           <circle key={cx} cx={cx} cy={cy} r={5} fill={tempColor(payload.original, payload.unit)} stroke="#fff" strokeWidth={1.5} />
