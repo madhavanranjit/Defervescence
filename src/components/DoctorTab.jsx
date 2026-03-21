@@ -86,12 +86,13 @@ const [showCustom, setShowCustom] = useState(false)
   const filteredReadings = filterReadings(readings)
   const filteredMedicines = filterReadings(medicines)
 
-  const chartData = readings.map(r => ({
-    label: r.date ? `${new Date(r.date + 'T12:00:00').getDate()}/${new Date(r.date + 'T12:00:00').getMonth() + 1}` : r.date,
-    temp: convert(r.temperature, r.unit),
-    unit: r.unit,
-    original: r.temperature,
-  }))
+  const chartData = filteredReadings.map(r => ({
+  label: r.date ? `${new Date(r.date + 'T12:00:00').getDate()}/${new Date(r.date + 'T12:00:00').getMonth() + 1}` : r.date,
+  fullDate: r.date,
+  temp: convert(r.temperature, r.unit),
+  unit: r.unit,
+  original: r.temperature,
+}))
 
   const temps = filteredReadings.map(r => convert(r.temperature, r.unit))
   const peak = temps.length ? Math.max(...temps) : 0
@@ -169,41 +170,56 @@ const [showCustom, setShowCustom] = useState(false)
       </div>
 
       {/* Chart */}
-      <div style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '18px', padding: '16px 8px', marginBottom: '16px' }}>
-        <p style={{ fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#999', marginBottom: '12px', paddingLeft: '8px' }}>
-          Temperature over time (°{unit})
-        </p>
-        <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={chartData} margin={{ top: 5, right: 16, left: -10, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0eeea" />
-            <XAxis dataKey="label" tick={{ fill: '#999', fontSize: 9 }} />
-            <YAxis domain={['auto', 'auto']} tick={{ fill: '#999', fontSize: 9 }} tickFormatter={v => v + '°'} />
-            <Tooltip
-              contentStyle={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '0.75rem' }}
-              labelStyle={{ color: '#999' }}
-              formatter={v => [v + '°' + unit, 'Temp']}
-            />
-            <ReferenceLine
-              y={unit === 'F' ? 100.4 : 38}
-              stroke="rgba(255,107,53,0.5)"
-              strokeDasharray="4 4"
-              label={{ value: unit === 'F' ? '100.4°F' : '38°C', fill: '#ff6b35', fontSize: 9, position: 'right' }}
-            />
-            <Line type="monotone" dataKey="temp" stroke="#ff6b35" strokeWidth={2.5}
-              dot={({ cx, cy, payload }) => (
-                <circle key={cx} cx={cx} cy={cy} r={5} fill={tempColor(payload.original, payload.unit)} stroke="#fff" strokeWidth={1.5} />
-              )}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-        <div style={{ display: 'flex', gap: '14px', padding: '8px 8px 0', flexWrap: 'wrap' }}>
-          {[['#c0003c', '#ffe5e8', 'High'], ['#8a6000', '#fff8e1', 'Mild fever'], ['#00875a', '#e3fcef', 'Normal']].map(([c, bg, l]) => (
-            <span key={l} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.61rem', color: '#999' }}>
-              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: c, flexShrink: 0 }} />{l}
-            </span>
-          ))}
-        </div>
-      </div>
+<div style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '18px', padding: '16px 8px', marginBottom: '16px' }}>
+  <p style={{ fontSize: '0.62rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: '#999', marginBottom: '12px', paddingLeft: '8px' }}>
+    Temperature over time (°{unit})
+  </p>
+  <ResponsiveContainer width="100%" height={200}>
+    <LineChart data={chartData} margin={{ top: 5, right: 16, left: -10, bottom: 5 }}>
+      <CartesianGrid strokeDasharray="3 3" stroke="#f0eeea" />
+      <XAxis dataKey="label" tick={{ fill: '#999', fontSize: 9 }} />
+      <YAxis domain={['auto', 'auto']} tick={{ fill: '#999', fontSize: 9 }} tickFormatter={v => v + '°'} />
+      <Tooltip
+        contentStyle={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px', fontSize: '0.75rem' }}
+        labelStyle={{ color: '#999' }}
+        formatter={v => [v + '°' + unit, 'Temp']}
+      />
+      <ReferenceLine
+        y={unit === 'F' ? 100.4 : 38}
+        stroke="rgba(255,107,53,0.5)"
+        strokeDasharray="4 4"
+        label={{ value: unit === 'F' ? '100.4°F' : '38°C', fill: '#ff6b35', fontSize: 9, position: 'right' }}
+      />
+      {/* Medicine reference lines */}
+      {filteredMedicines.map(m => {
+        const matchingIndex = chartData.findIndex(d => d.fullDate === m.date)
+        if (matchingIndex === -1) return null
+        return (
+          <ReferenceLine
+            key={m.id}
+            x={chartData[matchingIndex]?.label}
+            stroke="#ff6b35"
+            strokeDasharray="2 2"
+            strokeOpacity={0.4}
+            label={{ value: '💊', position: 'top', fontSize: 10 }}
+          />
+        )
+      })}
+      <Line type="monotone" dataKey="temp" stroke="#ff6b35" strokeWidth={2.5}
+        dot={({ cx, cy, payload }) => (
+          <circle key={cx} cx={cx} cy={cy} r={5} fill={tempColor(payload.original, payload.unit)} stroke="#fff" strokeWidth={1.5} />
+        )}
+      />
+    </LineChart>
+  </ResponsiveContainer>
+  <div style={{ display: 'flex', gap: '14px', padding: '8px 8px 0', flexWrap: 'wrap' }}>
+    {[['#c0003c', 'High'], ['#8a6000', 'Mild fever'], ['#00875a', 'Normal'], ['#ff6b35', '💊 Medicine']].map(([c, l]) => (
+      <span key={l} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.61rem', color: '#999' }}>
+        <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: c, flexShrink: 0 }} />{l}
+      </span>
+    ))}
+  </div>
+</div>
 
       {/* Readings table */}
       <div style={{ background: '#fff', border: '1px solid #e0e0e0', borderRadius: '18px', padding: '16px', marginBottom: '16px' }}>
