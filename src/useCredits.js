@@ -5,10 +5,11 @@ const FREE_LIMIT = 100
 
 export function useCredits(session) {
   const [credits, setCredits] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (session) fetchCredits()
+    else setLoading(false)
   }, [session])
 
   async function fetchCredits() {
@@ -69,10 +70,10 @@ export function useCredits(session) {
     return { allowed: false, reason: 'no_credits' }
   }
 
-  const freeRemaining = credits ? Math.max(0, FREE_LIMIT - credits.free_readings_used) : FREE_LIMIT
-  const paidRemaining = credits ? credits.paid_credits : 0
-  const totalRemaining = freeRemaining + paidRemaining
-  const isPaid = credits ? credits.paid_credits > 0 : false
+  const freeRemaining = !session ? 999 : credits ? Math.max(0, FREE_LIMIT - credits.free_readings_used) : FREE_LIMIT
+const paidRemaining = !session ? 0 : credits ? credits.paid_credits : 0
+const totalRemaining = freeRemaining + paidRemaining
+const isPaid = credits ? credits.paid_credits > 0 : false
 
-  return { credits, loading, useCredit, freeRemaining, paidRemaining, totalRemaining, isPaid, FREE_LIMIT }
+return { credits, loading, useCredit, freeRemaining, paidRemaining, totalRemaining, isPaid, FREE_LIMIT }
 }
