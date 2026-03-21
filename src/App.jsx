@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
+import { App as CapApp } from '@capacitor/app'
 import Auth from './components/Auth'
 import Dashboard from './components/Dashboard'
 
@@ -12,14 +13,28 @@ export default function App() {
       setSession(session)
       setLoading(false)
     })
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
     })
+
+    // Handle deep link callback
+    CapApp.addListener('appUrlOpen', async ({ url }) => {
+      if (url.includes('login-callback')) {
+        const params = new URLSearchParams(url.split('#')[1] || url.split('?')[1])
+        const access_token = params.get('access_token')
+        const refresh_token = params.get('refresh_token')
+        if (access_token) {
+          await supabase.auth.setSession({ access_token, refresh_token })
+        }
+      }
+    })
+
     return () => subscription.unsubscribe()
   }, [])
 
   if (loading) return (
-    <div style={{display:'flex',alignItems:'center',justifyContent:'center',height:'100vh',background:'#0d0d0f',color:'#ff6b35',fontFamily:'monospace'}}>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#f7f6f3', color: '#ff6b35', fontFamily: 'monospace' }}>
       Loading…
     </div>
   )

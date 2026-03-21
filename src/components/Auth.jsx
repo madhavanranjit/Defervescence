@@ -9,11 +9,13 @@ export default function Auth() {
   const [error, setError] = useState('')
 
   async function signInWithGoogle() {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin }
-    })
-  }
+  await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: 'com.defervescence.app://login-callback'
+    }
+  })
+}
 
   async function sendOTP() {
     if (!phone) return
