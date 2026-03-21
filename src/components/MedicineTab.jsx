@@ -85,35 +85,42 @@ export default function MedicineTab({ session, creditsData, patient }) {
   }
 
   async function saveMedicine() {
-    if (!parsed) return
+  if (!parsed) return
 
-    const medicine = {
-      user_id: session?.user?.id,
-      patient_id: patient?.id,
-      name: parsed.name,
-      dose: parsed.dose,
-      date: parsed.date,
-      time: parsed.time,
-      date_display: parsed.date_display,
-      time_display: parsed.time_display,
+  if (session && creditsData) {
+    const { allowed } = await creditsData.useCredit()
+    if (!allowed) {
+      alert('No credits remaining! Please top up to continue.')
+      return
     }
-
-    if (!session) {
-      const { saveLocalMedicine } = await import('../localData')
-      saveLocalMedicine(medicine)
-    } else {
-      const { error } = await supabase.from('medicines').insert(medicine)
-      if (error) { alert('Save failed: ' + error.message); return }
-    }
-
-    setSaved(true)
-    setParsed(null)
-    setTranscript('')
-    transcriptRef.current = ''
-    setManualText('')
-    fetchMedicines()
   }
 
+  const medicine = {
+    user_id: session?.user?.id,
+    patient_id: patient?.id,
+    name: parsed.name,
+    dose: parsed.dose,
+    date: parsed.date,
+    time: parsed.time,
+    date_display: parsed.date_display,
+    time_display: parsed.time_display,
+  }
+
+  if (!session) {
+    const { saveLocalMedicine } = await import('../localData')
+    saveLocalMedicine(medicine)
+  } else {
+    const { error } = await supabase.from('medicines').insert(medicine)
+    if (error) { alert('Save failed: ' + error.message); return }
+  }
+
+  setSaved(true)
+  setParsed(null)
+  setTranscript('')
+  transcriptRef.current = ''
+  setManualText('')
+  fetchMedicines()
+}
   return (
     <div style={{ padding: '16px 0 40px' }}>
 

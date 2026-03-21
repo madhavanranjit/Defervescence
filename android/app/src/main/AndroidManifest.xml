@@ -30,6 +30,14 @@
                 <data android:scheme="com.defervescence.app" android:host="login-callback" />
             </intent-filter>
 
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https"
+                    android:host="defervescence.vercel.app" />
+            </intent-filter>
+
         </activity>
 
         <provider
