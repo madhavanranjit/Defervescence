@@ -80,8 +80,8 @@ export default function DoctorTab({ session, patient }) {
   const filteredReadings = filterReadings(readings)
   const filteredMedicines = filterReadings(medicines)
 
-  const chartData = filteredReadings.map(r => ({
-    label: `${r.date_display?.replace(', 2026', '') || r.date}\n${r.time_display || r.time}`,
+  const chartData = readings.map(r => ({
+    label: r.date ? `${new Date(r.date + 'T12:00:00').getDate()}/${new Date(r.date + 'T12:00:00').getMonth() + 1}` : r.date,
     temp: convert(r.temperature, r.unit),
     unit: r.unit,
     original: r.temperature,
