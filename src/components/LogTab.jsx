@@ -59,16 +59,20 @@ export default function LogTab({ session, creditsData, patient }) {
     const localTime = now.toLocaleTimeString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: true })
     const localDate = now.toLocaleDateString('en-US', { timeZone: tz, year: 'numeric', month: 'long', day: 'numeric' })
     try {
-      const res = await fetch(`${apiBase}/api/parse`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, localDate, localTime, preferredUnit: unit })
-      })
-      const result = await res.json()
-      if (result.error) throw new Error(result.error)
-      setParsed(result)
-    } catch (e) {
-  alert('Error: ' + e.message + ' — ' + e.toString())
+  console.log('Fetching:', `${apiBase}/api/parse`)
+  const res = await fetch(`${apiBase}/api/parse`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, localDate, localTime, preferredUnit: unit })
+  })
+  console.log('Status:', res.status)
+  const responseText = await res.text()
+  console.log('Response:', responseText)
+  const result = JSON.parse(responseText)
+  if (result.error) throw new Error(result.error)
+  setParsed(result)
+} catch (e) {
+  alert('Error: ' + e.message)
 }
     setLoading(false)
   }
