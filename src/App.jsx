@@ -13,25 +13,6 @@ export default function App() {
   )
 
   useEffect(() => {
-    // Try to restore saved session first
-    const savedSession = localStorage.getItem('defervescence-session')
-    if (savedSession) {
-      try {
-        const parsed = JSON.parse(savedSession)
-        supabase.auth.setSession({
-          access_token: parsed.access_token,
-          refresh_token: parsed.refresh_token
-        }).then(({ data }) => {
-          if (data.session) setSession(data.session)
-          setLoading(false)
-        })
-      } catch {
-        localStorage.removeItem('defervescence-session')
-        setLoading(false)
-      }
-      return
-    }
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
       setLoading(false)
@@ -39,61 +20,25 @@ export default function App() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
-      if (session) {
-        localStorage.setItem('defervescence-session', JSON.stringify({
-          access_token: session.access_token,
-          refresh_token: session.refresh_token
-        }))
-      } else {
-        localStorage.removeItem('defervescence-session')
-      }
       setLoading(false)
     })
-
-    // Listen for browser close after Google login
-    const setupBrowserListener = async () => {
-      try {
-        const { Browser } = await import('@capacitor/browser')
-        await Browser.addListener('browserFinished', async () => {
-          const { data: { session } } = await supabase.auth.getSession()
-          if (session) {
-            setSession(session)
-            localStorage.setItem('defervescence-session', JSON.stringify({
-              access_token: session.access_token,
-              refresh_token: session.refresh_token
-            }))
-          }
-        })
-      } catch(e) {
-        console.log('Browser listener error:', e)
-      }
-    }
-
-    if (isNative()) setupBrowserListener()
 
     return () => subscription.unsubscribe()
   }, [])
 
   async function signInWithGoogleNative() {
     try {
-      const { Browser } = await import('@capacitor/browser')
-      const { data, error } = await supabase.auth.signInWithOAuth({
+      const { GoogleAuth } = await import('@southdevs/capacitor-google-auth')
+      await GoogleAuth.initialize()
+      const googleUser = await GoogleAuth.signIn()
+      const idToken = googleUser.authentication.idToken
+      const { error } = await supabase.auth.signInWithIdToken({
         provider: 'google',
-        options: {
-          redirectTo: 'https://defervescence.vercel.app',
-          skipBrowserRedirect: true
-        }
+        token: idToken,
       })
       if (error) throw error
-      if (data?.url) {
-        await Browser.open({
-          url: data.url,
-          windowName: '_self',
-          presentationStyle: 'popover'
-        })
-      }
     } catch (e) {
-      console.log('Google login error:', e)
+      console.error('Google sign-in error:', e)
     }
   }
 
@@ -106,7 +51,6 @@ export default function App() {
     localStorage.removeItem('skipLogin')
     localStorage.removeItem('guestPatients')
     localStorage.removeItem('activePatientId')
-    localStorage.removeItem('defervescence-session')
     setSkipLogin(false)
     setSession(null)
   }

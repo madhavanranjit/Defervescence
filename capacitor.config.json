@@ -9,6 +9,11 @@
   "plugins": {
     "App": {
       "launchUrl": "com.defervescence.app://login-callback"
+    },
+    "GoogleAuth": {
+      "scopes": ["profile", "email"],
+      "clientId": "103837849607-28s53gc5cag5uc5cvc9kbcd7q1mrfu7c.apps.googleusercontent.com",
+      "forceCodeForRefreshToken": false
     }
   }
 }
