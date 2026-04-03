@@ -187,7 +187,7 @@ export default function LogTab({ session, creditsData, patient }) {
             <span style={{ fontSize: '1.8rem' }}>{isRec ? '⏹' : '🎤'}</span>
           </button>
           <span style={{ fontSize: '0.64rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: '#999' }}>
-            {isRec ? 'Listening… tap to stop' : 'Tap to speak'}
+            {isRec ? 'Listening… tap to stop' : 'Tap to record your temperature'}
           </span>
         </div>
 
