@@ -41,9 +41,6 @@ export default function SetupTab({ session, creditsData, onSignOut }) {
           onClick={() => alert('Payments coming soon! ₹19 for 200 voice readings.')}>
           ₹19 for 200 voice readings — Top up
         </button>
-        <p style={{ fontSize: '0.65rem', color: '#999', textAlign: 'center', marginTop: '8px' }}>
-          Secure payment via Razorpay · UPI / Cards accepted
-        </p>
       </div>
 
       {/* About */}
@@ -64,6 +61,12 @@ export default function SetupTab({ session, creditsData, onSignOut }) {
         <div style={s.infoRow}>
           <span style={s.infoLabel}>Web</span>
           <span style={s.infoVal}>defervescence.vercel.app</span>
+        </div>
+        <div style={{ ...s.infoRow, borderBottom: 'none' }}>
+          <span style={s.infoLabel}>Feedback</span>
+          <a href="mailto:maatriaisolutions@gmail.com?subject=Defervescence%20Feedback" style={{ ...s.infoVal, color: '#ff6b35', textDecoration: 'none' }}>
+            📧 Email us
+          </a>
         </div>
       </div>
 

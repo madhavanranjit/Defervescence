@@ -87,7 +87,7 @@ export default function MedicineTab({ session, creditsData, patient }) {
   async function saveMedicine() {
   if (!parsed) return
 
-  if (session && creditsData) {
+  if (creditsData) {
     const { allowed } = await creditsData.useCredit()
     if (!allowed) {
       alert('No credits remaining! Please top up to continue.')

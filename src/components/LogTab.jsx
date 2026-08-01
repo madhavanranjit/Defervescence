@@ -80,7 +80,7 @@ export default function LogTab({ session, creditsData, patient }) {
   async function saveVoiceReading() {
   if (!parsed) return
   
-  if (session && creditsData) {
+  if (creditsData) {
     const { allowed } = await creditsData.useCredit()
     if (!allowed) {
       alert('No credits remaining! Please top up to continue.')
